@@ -6,7 +6,7 @@ import zipfile
 from awpy import Demo
 
 # Setting parameters for the CS Demo Manager Extractions
-folder_path = r'C:\Users\bayli\Documents\Git Projects\CS2_Project\xlsx_exports'
+folder_path = r'C:\Users\bayli\Documents\Git Projects\CS2\xlsx_exports'
 sheet_data = {}
 df_all_first_kills = pd.DataFrame()
 
@@ -116,7 +116,7 @@ df_Players_1 = df_Players_1.merge(player_kills, on='steam_id', how='left')
 df_Players_1 = df_Players_1.merge(player_first_kills, on='steam_id', how='left')
 
 # Sets Parameters for the AWPY Extractions
-folder_path = r'C:\Users\bayli\Documents\Git Projects\CS2_Project\test_demos'
+folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 df_flashes = pd.DataFrame()
 df_he = pd.DataFrame()
