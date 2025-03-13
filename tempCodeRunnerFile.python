@@ -1,0 +1,219 @@
+# Imports
+import pandas as pd
+import numpy as np
+import os
+import awpy
+from awpy import Demo
+from awpy.stats import adr
+from awpy.stats import kast
+from awpy.stats import rating
+from awpy.stats import calculate_trades
+
+folder_path = r'C:\Users\bayli\Documents\CS Demos\rar\blast-premier-world-final-2024-natus-vincere-vs-faze-bo3-85W4TIKNsaSyhfu85Ujaky'
+
+# Creating DataFrames
+df_flashes = pd.DataFrame()
+df_he = pd.DataFrame()
+df_infernos = pd.DataFrame()
+df_smoke = pd.DataFrame()
+df_kills = pd.DataFrame()
+df_rounds = pd.DataFrame()
+df_all_first_kills = pd.DataFrame()
+df_adr = pd.DataFrame()
+df_kast = pd.DataFrame()
+df_rating = pd.DataFrame()
+team_rounds_won = pd.DataFrame()
+# Funtion used to add the team name to the rounds DataFrame
+def add_round_winners(ticks_df, rounds_df):
+    # Makes sure the columns exists
+    rounds_df['CT_team_clan_name'] = None
+    rounds_df['T_team_clan_name'] = None
+    rounds_df['winner_clan_name'] = None
+
+    for idx, row in rounds_df.iterrows():
+        freeze_end_tick = row['freeze_end']
+        winner = str(row['winner']).upper()  # Makes the string uppercase
+
+        # Takes all corresponding entries
+        first_tick_df = ticks_df[ticks_df['tick'] == freeze_end_tick]
+
+        # Takes the name for every team
+        try:
+            CT_team = first_tick_df[first_tick_df['team_name'] == 'CT']['team_clan_name'].iloc[0]
+        except IndexError:
+            CT_team = None
+        
+        try:
+            T_team = first_tick_df[first_tick_df['team_name'] == 'TERRORIST']['team_clan_name'].iloc[0]
+        except IndexError:
+            T_team = None
+
+        if winner == 'CT':
+            winner_clan = CT_team
+        elif winner in ['T', 'TERRORIST']:
+            winner_clan = T_team
+        else:
+            winner_clan = None
+            print(f"[!] Round {idx} - winner indefinido ou inesperado: '{winner}'")
+            
+        # Fill Columns in the DataFrame
+        rounds_df.at[idx, 'CT_team_clan_name'] = CT_team
+        rounds_df.at[idx, 'T_team_clan_name'] = T_team
+        rounds_df.at[idx, 'winner_clan_name'] = winner_clan
+
+    return rounds_df
+
+# Iteration over all the .dem files in the folder
+for file_name in os.listdir(folder_path):
+    if file_name.endswith('.dem'):
+
+        file_path = os.path.join(folder_path, file_name)
+        dem = Demo(file_path)
+
+        # Grenades Data
+        this_file_flashes = dem.events['flashbang_detonate']
+        this_file_he = dem.events['hegrenade_detonate']
+        this_file_infernos = dem.events['inferno_startburn']
+        this_file_smoke = dem.events['smokegrenade_detonate']
+        df_flashes = pd.concat([df_flashes,this_file_flashes], ignore_index=True)
+        df_he = pd.concat([df_he,this_file_he], ignore_index=True)
+        df_infernos = pd.concat([df_infernos,this_file_infernos], ignore_index=True)
+        df_smoke = pd.concat([df_smoke,this_file_smoke], ignore_index=True)
+
+        # Opening Kills Data
+        this_file_df_kills = dem.kills
+        first_kills = this_file_df_kills.sort_values(by=['round', 'tick'])
+        first_kills = first_kills.groupby('round').first().reset_index()
+        df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
+
+        # Rounds Data
+        this_file_df_ticks = dem.ticks
+        this_file_df_rounds = dem.rounds
+        add_round_winners(this_file_df_ticks,this_file_df_rounds)
+        # Creates rounds won columns
+        this_file_team_rounds_won = this_file_df_rounds.groupby('winner_clan_name').agg(
+            total_rounds_won=('winner_clan_name', 'size'),
+            t_rounds_won=('winner', lambda x: (x == 'CT').sum()),
+            ct_rounds_won=('winner', lambda x: (x == 'T').sum())
+        ).reset_index()
+        this_file_team_rounds_won.columns = ['team_name', 'total_rounds_won','t_rounds_won', 'ct_rounds_won']
+        team_rounds_won = pd.concat([team_rounds_won,this_file_team_rounds_won], ignore_index=True)
+        df_kills = pd.concat([df_kills,this_file_df_kills], ignore_index=True)
+
+        # # Gets stats from the player
+        # this_file_df_adr = adr(dem)
+        # this_file_df_adr.rename(columns={'steamid': 'steam_id'}, inplace=True)
+        # df_adr = pd.concat([df_adr,this_file_df_adr], ignore_index=True)
+
+        # this_file_df_rating = rating(dem)
+        # this_file_df_rating.rename(columns={'steamid': 'steam_id'}, inplace=True)
+
+        # this_file_df_kast = kast(dem)
+        # this_file_df_kast.rename(columns={'steamid': 'steam_id'}, inplace=True)      
+
+# Opening Duels
+# Groups all the opening duels in 2 tables: All First Kills and All First Deaths
+player_kills = df_all_first_kills.groupby('attacker_steamid').agg(
+    kills=('attacker_steamid', 'size'),
+    CT_first_kills=('attacker_team_name', lambda x: (x == 'CT').sum()),
+    T_first_kills=('attacker_team_name', lambda x: (x == 'TERRORIST').sum())
+).reset_index()
+player_kills.rename(columns={'attacker_steamid': 'steam_id'}, inplace=True)
+
+player_deaths = df_all_first_kills.groupby('victim_steamid').agg(
+    first_deaths=('victim_steamid', 'size'),  
+    CT_first_deaths=('victim_team_name', lambda x: (x == 'CT').sum()),  
+    T_first_deaths=('victim_team_name', lambda x: (x == 'TERRORIST').sum())  
+).reset_index()
+player_deaths.rename(columns={'victim_steamid': 'steam_id'}, inplace=True)
+
+player_first_kills = player_kills.merge(player_deaths, on='steam_id', how='left')
+
+# Groups the kills data in a table where the primary key is the user steam_id, organizing it to further merge other tables
+# This data has to be grouped in 3 DataFrames: Kills, Assists and Deaths
+# Kills
+player_kills = df_kills.groupby('attacker_steamid').agg(
+    kills=('attacker_steamid', 'size'),
+    headshots=('headshot', lambda x: (x == 1).sum()),
+    wallbang_kills=('penetrated', lambda x: (x == 1).sum()),
+    assisted_flashes=('assistedflash', lambda x: (x == 1).sum()),
+    #trade_kills=('is_trade_kill', 'sum'),
+    #trade_deaths=('is_trade_death', 'sum'),
+    no_scope=('noscope', lambda x: (x == 1).sum()),
+    through_smoke=('thrusmoke', lambda x: (x == 1).sum()),
+    #airbone_kills=('is_killer_airbone', 'sum'),
+    #airbone_victim_kills=('is_victim_airbone', 'sum'),
+    blind_kills=('attackerblind', lambda x: (x == 1).sum()),
+    victim_blind_kills=('assistedflash', lambda x: (x == 1).sum()),
+    attacker_team_clan_name=('attacker_team_clan_name', 'first')
+).reset_index()
+player_kills.rename(columns={'attacker_steamid': 'steam_id'}, inplace=True)
+player_kills.rename(columns={'attacker_team_clan_name': 'team_name'}, inplace=True)
+
+# Assists
+player_assists = df_kills.groupby('assister_steamid').agg(
+    assists=('assister_steamid', 'size')
+).reset_index()
+player_assists.rename(columns={'assister_steamid': 'steam_id'}, inplace=True)
+
+# Deaths
+player_deaths = df_kills.groupby('victim_steamid').agg(
+    deaths=('victim_steamid', 'size')
+).reset_index()
+player_deaths.rename(columns={'victim_steamid': 'steam_id'}, inplace=True)
+
+players = player_kills.merge(player_assists, on='steam_id', how='left').merge(player_deaths, on='steam_id', how='left')
+players['kd'] = players['kills'] / players['deaths']
+
+# Merge the Rounds Won Data with the Kills Data
+team_rounds_won = team_rounds_won.groupby('team_name').agg(
+    total_rounds_won=('total_rounds_won', 'sum'),
+    t_rounds_won=('t_rounds_won', 'sum'),
+    ct_rounds_won=('ct_rounds_won', 'sum')
+).reset_index()
+
+player_kills = player_kills.merge(team_rounds_won, on='team_name', how='left')
+
+# Group all the grenades data in separated dataframes
+df_all_flashes = df_flashes.groupby('user_steamid').agg(
+    flahes_thrown=('user_steamid', 'size'),
+    CT_flahes_thrown=('user_team_name', lambda x: (x == 'CT').sum()),
+    T_flahes_thrown=('user_team_name', lambda x: (x == 'TERRORIST').sum()),
+    flahes_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum()),
+).reset_index()
+df_all_flashes.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
+df_all_flashes['steam_id'] = df_all_flashes['steam_id'].astype('int64')
+
+df_all_he = df_he.groupby('user_steamid').agg(
+    he_thrown=('user_steamid', 'size'),
+    CT_he_thrown=('user_team_name', lambda x: (x == 'CT').sum()),
+    T_he_thrown=('user_team_name', lambda x: (x == 'TERRORIST').sum()),
+    he_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum())
+).reset_index()
+df_all_he.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
+df_all_he['steam_id'] = df_all_he['steam_id'].astype('int64')
+
+df_all_infernos = df_infernos.groupby('user_steamid').agg(
+    infernos_thrown=('user_steamid', 'size'),
+    CT_infernos_thrown=('user_team_name', lambda x: (x == 'CT').sum()),
+    T_infernos_thrown=('user_team_name', lambda x: (x == 'TERRORIST').sum()),
+    infernos_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum())
+).reset_index()
+df_all_infernos.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
+df_all_infernos['steam_id'] = df_all_infernos['steam_id'].astype('int64')
+
+df_all_smokes = df_smoke.groupby('user_steamid').agg(
+    smokes_thrown=('user_steamid', 'size'),
+    CT_smokes_thrown=('user_team_name', lambda x: (x == 'CT').sum()),
+    T_smokes_thrown=('user_team_name', lambda x: (x == 'TERRORIST').sum()),
+    smokes_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum())
+).reset_index()
+df_all_smokes.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
+df_all_smokes['steam_id'] = df_all_smokes['steam_id'].astype('int64')
+
+# Merges all the current data in a single dataframe
+player_kills = player_kills.merge(df_all_flashes, on='steam_id', how='left')
+player_kills = player_kills.merge(df_all_he, on='steam_id', how='left')
+player_kills = player_kills.merge(df_all_infernos, on='steam_id', how='left')
+player_kills = player_kills.merge(df_all_smokes, on='steam_id', how='left')
+

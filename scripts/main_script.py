@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import os
-import zipfile
+import rarfile
 from awpy import Demo
 
 # Setting parameters for the CS Demo Manager Extractions
