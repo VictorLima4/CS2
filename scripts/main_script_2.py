@@ -1,6 +1,7 @@
 # Imports
 import pandas as pd
 import numpy as np
+import polars as pl
 import os
 import awpy
 from demoparser2 import DemoParser
@@ -11,8 +12,8 @@ from awpy.stats import kast
 from awpy.stats import rating
 from awpy.stats import calculate_trades
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\rar\blast-premier-world-final-2024-natus-vincere-vs-faze-bo3-85W4TIKNsaSyhfu85Ujaky'
-i = 1
+folder_path = r'C:\Users\bayli\Documents\CS Demos\All_IEM_Katowice_2025\IEM_Katowice_2025'
+
 #Creating DataFrames
 df_flashes = pd.DataFrame()
 df_he = pd.DataFrame()
@@ -22,6 +23,8 @@ df_kills = pd.DataFrame()
 df_rounds = pd.DataFrame()
 df_all_first_kills = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
+players_id = pd.DataFrame()
+i = 1
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
@@ -70,19 +73,55 @@ for file_name in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file_name)
         dem = Demo(file_path)
         dem.parse(player_props=["team_clan_name","total_rounds_played"])
-        
+
+        #Gets all the Players' steam_ids
+        this_file_players_id = dem.events.get('player_spawn')
+        this_file_players_id = this_file_players_id.with_columns(
+            this_file_players_id['user_steamid'].cast(pl.Utf8)
+        )
+        this_file_players_id = this_file_players_id.to_pandas()
+        this_file_players_id = this_file_players_id[['user_steamid', 'user_name']].drop_duplicates()
+        players_id = pd.concat([players_id, this_file_players_id], ignore_index=True)
+        players_id = players_id[['user_steamid', 'user_name']].drop_duplicates()
+
         #Grenades Data
-        this_file_flashes = dem.events['flashbang_detonate']
-        this_file_he = dem.events['hegrenade_detonate']
-        this_file_infernos = dem.events['inferno_startburn']
-        this_file_smoke = dem.events['smokegrenade_detonate']
-        df_flashes = pd.concat([df_flashes,this_file_flashes.to_pandas()], ignore_index=True)
-        df_he = pd.concat([df_he,this_file_he.to_pandas()], ignore_index=True)
-        df_infernos = pd.concat([df_infernos,this_file_infernos.to_pandas()], ignore_index=True)
-        df_smoke = pd.concat([df_smoke,this_file_smoke.to_pandas()], ignore_index=True)
+        this_file_flashes = dem.events.get('flashbang_detonate', pl.DataFrame())
+        if this_file_flashes is not None and len(this_file_flashes) > 0:
+            this_file_flashes = this_file_flashes.with_columns(
+                this_file_flashes['user_steamid'].cast(pl.Utf8)
+            )
+        this_file_he = dem.events.get('hegrenade_detonate', pl.DataFrame())
+        if this_file_he is not None and len(this_file_he) > 0:
+            this_file_he = this_file_he.with_columns(
+                this_file_he['user_steamid'].cast(pl.Utf8)
+            )
+        this_file_infernos = dem.events.get('inferno_startburn', pl.DataFrame())
+        if this_file_infernos is not None and len(this_file_infernos) > 0:
+            this_file_infernos = this_file_infernos.with_columns(
+                this_file_infernos['user_steamid'].cast(pl.Utf8)
+            )
+        this_file_smoke = dem.events.get('smokegrenade_detonate', pl.DataFrame())
+        if this_file_smoke is not None and len(this_file_smoke) > 0:
+            this_file_smoke = this_file_smoke.with_columns(
+                this_file_smoke['user_steamid'].cast(pl.Utf8)
+            )
+
+        if this_file_flashes is not None and len(this_file_flashes) > 0:
+            df_flashes = pd.concat([df_flashes, this_file_flashes.to_pandas()], ignore_index=True)
+        if this_file_he is not None and len(this_file_he) > 0:
+            df_he = pd.concat([df_he, this_file_he.to_pandas()], ignore_index=True)
+        if this_file_infernos is not None and len(this_file_infernos) > 0:
+            df_infernos = pd.concat([df_infernos, this_file_infernos.to_pandas()], ignore_index=True)
+        if this_file_smoke is not None and len(this_file_smoke) > 0:
+            df_smoke = pd.concat([df_smoke, this_file_smoke.to_pandas()], ignore_index=True) 
 
         #Opening Kills Data
         this_file_df_kills = dem.kills
+        this_file_df_kills = this_file_df_kills.with_columns(
+            this_file_df_kills['attacker_steamid'].cast(pl.Utf8),
+            this_file_df_kills['assister_steamid'].cast(pl.Utf8),
+            this_file_df_kills['victim_steamid'].cast(pl.Utf8)
+        )
         this_file_df_kills = this_file_df_kills.to_pandas()
         first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
         first_kills = first_kills.groupby('round_num').first().reset_index()
@@ -219,4 +258,9 @@ players = players.merge(df_all_smokes, on='steam_id', how='left')
 players['util_in_pistol_round'] = players['flahes_thrown_in_pistol_round'] + players['he_thrown_in_pistol_round'] + players['infernos_thrown_in_pistol_round'] +  players['smokes_thrown_in_pistol_round']
 players['total_util_thrown'] = players['flahes_thrown'] + players['he_thrown'] + players['infernos_thrown'] +  players['smokes_thrown']
 
+players_id.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
+players_id['steam_id'] = players_id['steam_id'].fillna(0).astype('int64')
+players_id['steam_id'] = players_id['steam_id'].astype('int64')
+players = players.merge(players_id, on='steam_id', how='left')
+players = players[["steam_id", "user_name"] + [col for col in players.columns if col not in ["steam_id", "user_name"]]]
 players.to_csv('Data_Export.csv')
