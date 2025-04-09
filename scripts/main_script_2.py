@@ -12,9 +12,10 @@ from awpy.stats import kast
 from awpy.stats import rating
 from awpy.stats import calculate_trades
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\All_IEM_Katowice_2025\IEM_Katowice_2025'
+#folder_path = r'C:\Users\bayli\Documents\CS Demos\All_IEM_Katowice_2025\IEM_Katowice_2025'
+folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
-#Creating DataFrames
+# Creating DataFrames
 df_flashes = pd.DataFrame()
 df_he = pd.DataFrame()
 df_infernos = pd.DataFrame()
@@ -22,6 +23,8 @@ df_smoke = pd.DataFrame()
 df_kills = pd.DataFrame()
 df_rounds = pd.DataFrame()
 df_all_first_kills = pd.DataFrame()
+df_adr = pd.DataFrame()
+df_kast = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 i = 1
@@ -74,7 +77,7 @@ for file_name in os.listdir(folder_path):
         dem = Demo(file_path)
         dem.parse(player_props=["team_clan_name","total_rounds_played"])
 
-        #Gets all the Players' steam_ids
+        # Gets all the Players' steam_ids
         this_file_players_id = dem.events.get('player_spawn')
         this_file_players_id = this_file_players_id.with_columns(
             this_file_players_id['user_steamid'].cast(pl.Utf8)
@@ -84,7 +87,7 @@ for file_name in os.listdir(folder_path):
         players_id = pd.concat([players_id, this_file_players_id], ignore_index=True)
         players_id = players_id[['user_steamid', 'user_name']].drop_duplicates()
 
-        #Grenades Data
+        # Grenades Data
         this_file_flashes = dem.events.get('flashbang_detonate', pl.DataFrame())
         if this_file_flashes is not None and len(this_file_flashes) > 0:
             this_file_flashes = this_file_flashes.with_columns(
@@ -115,8 +118,8 @@ for file_name in os.listdir(folder_path):
         if this_file_smoke is not None and len(this_file_smoke) > 0:
             df_smoke = pd.concat([df_smoke, this_file_smoke.to_pandas()], ignore_index=True) 
 
-        #Opening Kills Data
-        this_file_df_kills = dem.kills
+        # Opening Kills Data
+        this_file_df_kills = awpy.stats.calculate_trades(demo=dem)
         this_file_df_kills = this_file_df_kills.with_columns(
             this_file_df_kills['attacker_steamid'].cast(pl.Utf8),
             this_file_df_kills['assister_steamid'].cast(pl.Utf8),
@@ -127,7 +130,7 @@ for file_name in os.listdir(folder_path):
         first_kills = first_kills.groupby('round_num').first().reset_index()
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
 
-        #Rounds Data
+        # Rounds Data
         this_file_df_ticks = dem.ticks
         this_file_df_rounds = dem.rounds
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
@@ -141,6 +144,29 @@ for file_name in os.listdir(folder_path):
         team_rounds_won = pd.concat([team_rounds_won,this_file_team_rounds_won], ignore_index=True)
         df_kills = pd.concat([df_kills,this_file_df_kills], ignore_index=True)
 
+        # ADR Data
+        this_file_adr = awpy.stats.adr(demo=dem)
+        this_file_adr = this_file_adr.with_columns(
+            this_file_adr['steamid'].cast(pl.Utf8)
+        )
+        this_file_adr = this_file_adr.to_pandas()
+        this_file_adr = this_file_adr.drop(['adr', 'name'], axis=1)
+        df_adr = pd.concat([df_adr, this_file_adr], ignore_index=True)
+        df_adr = df_adr.groupby(['steamid','side'], as_index=False).sum()
+        df_adr = df_adr[df_adr['side'] != 'all']
+
+
+        # KAST Data
+        this_file_kast = awpy.stats.kast(demo=dem)
+        this_file_kast = this_file_kast.with_columns(
+            this_file_kast['steamid'].cast(pl.Utf8)
+        )
+        this_file_kast = this_file_kast.to_pandas()
+        this_file_kast = this_file_kast.drop(['kast', 'name'], axis=1)
+        df_kast = pd.concat([df_kast, this_file_kast], ignore_index=True)
+        df_kast = df_kast.groupby(['steamid','side'], as_index=False).sum()
+        df_kast = df_kast[df_kast['side'] != 'all']
+
         print(f"{i}: Processed {file_name}")
         i = i + 1
 
@@ -149,15 +175,15 @@ player_kills = df_kills.groupby('attacker_steamid').agg(
     headshots=('headshot', lambda x: (x == 1).sum()),
     wallbang_kills=('penetrated', lambda x: (x == 1).sum()),
     assisted_flashes=('assistedflash', lambda x: (x == 1).sum()),
-    #trade_kills=('is_trade_kill', 'sum'),
-    #trade_deaths=('is_trade_death', 'sum'),
+    trade_kills=('was_traded', lambda x: (x == 1).sum()),
     no_scope=('noscope', lambda x: (x == 1).sum()),
     through_smoke=('thrusmoke', lambda x: (x == 1).sum()),
-    #airbone_kills=('is_killer_airbone', 'sum'),
-    #airbone_victim_kills=('is_victim_airbone', 'sum'),
+    airbone_kills=('attackerinair', lambda x: (x == 1).sum()),
     blind_kills=('attackerblind', lambda x: (x == 1).sum()),
     victim_blind_kills=('assistedflash', lambda x: (x == 1).sum()),
-    attacker_team_clan_name=('attacker_team_clan_name', 'first')
+    attacker_team_clan_name=('attacker_team_clan_name', 'first'),
+    awp_kills=('weapon', lambda x: (x == 'awp').sum()),
+    pistol_kills=('weapon', lambda x: x.isin(['glock', 'usp_silencer', 'p250', 'p2000' , 'tec9', 'cz75_auto', 'fiveseven', 'deagle', 'elite', 'revolver']).sum())
 ).reset_index()
 player_kills.rename(columns={'attacker_steamid': 'steam_id'}, inplace=True)
 player_kills.rename(columns={'attacker_team_clan_name': 'team_clan_name'}, inplace=True)
@@ -168,14 +194,65 @@ player_assists = df_kills.groupby('assister_steamid').agg(
 player_assists.rename(columns={'assister_steamid': 'steam_id'}, inplace=True)
 
 player_deaths = df_kills.groupby('victim_steamid').agg(
-    deaths=('victim_steamid', 'size')
+    deaths=('victim_steamid', 'size'),
+    trade_deaths=('was_traded', lambda x: (x == 1).sum())
 ).reset_index()
 player_deaths.rename(columns={'victim_steamid': 'steam_id'}, inplace=True)
 
 players = player_kills.merge(player_assists, on='steam_id', how='left').merge(player_deaths, on='steam_id', how='left')
 players['steam_id'] = player_kills['steam_id'].astype('int64')
 players['kd'] = players['kills'] / players['deaths']
+players['k_d_diff'] = players['kills'] - players['deaths']
 
+
+# ADR Total
+adr_total = df_adr.groupby('steamid').agg({'dmg': 'sum', 'n_rounds': 'sum'})
+adr_total['adr_total'] = adr_total['dmg'] / adr_total['n_rounds']
+# ADR CT
+df_ct = df_adr[df_adr['side'] == 'ct']
+adr_ct = df_ct.groupby('steamid').agg({'dmg': 'sum', 'n_rounds': 'sum'})
+adr_ct['adr_ct_side'] = adr_ct['dmg'] / adr_ct['n_rounds']
+# ADR T
+df_t = df_adr[df_adr['side'] == 't']
+adr_t = df_t.groupby('steamid').agg({'dmg': 'sum', 'n_rounds': 'sum'})
+adr_t['adr_t_side'] = adr_t['dmg'] / adr_t['n_rounds']
+# ADR Data Frame
+df_adr = pd.DataFrame({
+    'steamid': adr_total.index,
+    'adr_total': adr_total['adr_total'],
+    'adr_ct_side': adr_ct['adr_ct_side'].reindex(adr_total.index, fill_value=0),
+    'adr_t_side': adr_t['adr_t_side'].reindex(adr_total.index, fill_value=0),
+}).reset_index(drop=True)
+# Merge ADR
+df_adr.rename(columns={'steamid': 'steam_id'}, inplace=True)
+df_adr['steam_id'] = df_adr['steam_id'].astype('int64')
+players = players.merge(df_adr, on='steam_id', how='left')
+
+
+# KAST Total
+kast_total = df_kast.groupby('steamid').agg({'kast_rounds': 'sum', 'n_rounds': 'sum'})
+kast_total['kast_total'] = kast_total['kast_rounds'] / kast_total['n_rounds']
+# KAST CT
+df_ct = df_kast[df_kast['side'] == 'ct']
+kast_ct = df_ct.groupby('steamid').agg({'kast_rounds': 'sum', 'n_rounds': 'sum'})
+kast_ct['kast_ct_side'] = kast_ct['kast_rounds'] / kast_ct['n_rounds']
+# KAST T
+df_t = df_kast[df_kast['side'] == 't']
+kast_t = df_t.groupby('steamid').agg({'kast_rounds': 'sum', 'n_rounds': 'sum'})
+kast_t['kast_t_side'] = kast_t['kast_rounds'] / kast_t['n_rounds']
+# KAST Data Frame
+df_kast = pd.DataFrame({
+    'steamid': kast_total.index,
+    'kast_total': kast_total['kast_total'],
+    'kast_ct_side': kast_ct['kast_ct_side'].reindex(kast_total.index, fill_value=0),
+    'kast_t_side': kast_t['kast_t_side'].reindex(kast_total.index, fill_value=0),
+}).reset_index(drop=True)
+# Merge KAST
+df_kast.rename(columns={'steamid': 'steam_id'}, inplace=True)
+df_kast['steam_id'] = df_kast['steam_id'].astype('int64')
+players = players.merge(df_kast, on='steam_id', how='left')
+
+# Rounds won Data
 team_rounds_won = team_rounds_won.groupby('team_clan_name').agg(
     total_rounds_won=('total_rounds_won', 'sum'),
     t_rounds_won=('t_rounds_won', 'sum'),
