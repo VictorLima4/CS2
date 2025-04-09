@@ -12,8 +12,8 @@ from awpy.stats import kast
 from awpy.stats import rating
 from awpy.stats import calculate_trades
 
-#folder_path = r'C:\Users\bayli\Documents\CS Demos\All_IEM_Katowice_2025\IEM_Katowice_2025'
-folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\All_IEM_Katowice_2025\IEM_Katowice_2025'
+#folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
 df_flashes = pd.DataFrame()
