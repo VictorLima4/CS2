@@ -12,11 +12,10 @@ key = os.getenv("key")
 
 supabase: Client = create_client(url, key)
 
-df = pd.DataFrame({
-    "nome": ["Ana", "João", "Maria"],
-    "idade": [25, 30, 28]
-})
+df = pd.read_csv("Data_Export.csv")
+df = df.drop(columns=["Unnamed: 0"])
 
 for row in df.to_dict(orient="records"):
-    response = supabase.table("my_table").insert(row).execute()
-    print(response)
+    response = supabase.table("player_stats").insert(row).execute()
+    # print(response)
+print("Data uploaded successfully!")

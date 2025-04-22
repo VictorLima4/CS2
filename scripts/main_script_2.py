@@ -265,16 +265,16 @@ players = players.merge(team_rounds_won, on='team_clan_name', how='left')
 # Creates the player table with all the kills raw data grouped for every match in a single table
 opening_kills = df_all_first_kills.groupby('attacker_steamid').agg(
     first_kills=('attacker_steamid', 'size'),
-    CT_first_kills=('attacker_side', lambda x: (x == 'ct').sum()),
-    T_first_kills=('attacker_side', lambda x: (x == 't').sum())
+    ct_first_kills=('attacker_side', lambda x: (x == 'ct').sum()),
+    t_first_kills=('attacker_side', lambda x: (x == 't').sum())
 ).reset_index()
 opening_kills.rename(columns={'attacker_steamid': 'steam_id'}, inplace=True)
 opening_kills['steam_id'] = opening_kills['steam_id'].astype('int64')
 
 opening_deaths = df_all_first_kills.groupby('victim_steamid').agg(
     first_deaths=('victim_steamid', 'size'),  
-    CT_first_deaths=('victim_side', lambda x: (x == 'ct').sum()),  
-    T_first_deaths=('victim_side', lambda x: (x == 't').sum())  
+    ct_first_deaths=('victim_side', lambda x: (x == 'ct').sum()),  
+    t_first_deaths=('victim_side', lambda x: (x == 't').sum())  
 ).reset_index()
 opening_deaths.rename(columns={'victim_steamid': 'steam_id'}, inplace=True)
 opening_deaths['steam_id'] = opening_deaths['steam_id'].astype('int64')
@@ -287,8 +287,8 @@ df_flashes.rename(columns={'user_total_rounds_played': 'round'}, inplace=True)
 df_flashes['round'] = df_flashes['round'] + 1
 df_all_flashes = df_flashes.groupby('user_steamid').agg(
     flahes_thrown=('user_steamid', 'size'),
-    CT_flahes_thrown=('user_side', lambda x: (x == 'ct').sum()),
-    T_flahes_thrown=('user_side', lambda x: (x == 't').sum()),
+    ct_flahes_thrown=('user_side', lambda x: (x == 'ct').sum()),
+    t_flahes_thrown=('user_side', lambda x: (x == 't').sum()),
     flahes_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum()),
 ).reset_index()
 df_all_flashes.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
@@ -298,8 +298,8 @@ df_he.rename(columns={'user_total_rounds_played': 'round'}, inplace=True)
 df_he['round'] = df_he['round'] + 1
 df_all_he = df_he.groupby('user_steamid').agg(
     he_thrown=('user_steamid', 'size'),
-    CT_he_thrown=('user_side', lambda x: (x == 'ct').sum()),
-    T_he_thrown=('user_side', lambda x: (x == 't').sum()),
+    ct_he_thrown=('user_side', lambda x: (x == 'ct').sum()),
+    t_he_thrown=('user_side', lambda x: (x == 't').sum()),
     he_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum())
 ).reset_index()
 df_all_he.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
@@ -309,8 +309,8 @@ df_infernos.rename(columns={'user_total_rounds_played': 'round'}, inplace=True)
 df_infernos['round'] = df_infernos['round'] + 1
 df_all_infernos = df_infernos.groupby('user_steamid').agg(
     infernos_thrown=('user_steamid', 'size'),
-    CT_infernos_thrown=('user_side', lambda x: (x == 'ct').sum()),
-    T_infernos_thrown=('user_side', lambda x: (x == 't').sum()),
+    ct_infernos_thrown=('user_side', lambda x: (x == 'ct').sum()),
+    t_infernos_thrown=('user_side', lambda x: (x == 't').sum()),
     infernos_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum())
 ).reset_index()
 df_all_infernos.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
@@ -320,8 +320,8 @@ df_smoke.rename(columns={'user_total_rounds_played': 'round'}, inplace=True)
 df_smoke['round'] = df_smoke['round'] + 1
 df_all_smokes = df_smoke.groupby('user_steamid').agg(
     smokes_thrown=('user_steamid', 'size'),
-    CT_smokes_thrown=('user_side', lambda x: (x == 'ct').sum()),
-    T_smokes_thrown=('user_side', lambda x: (x == 't').sum()),
+    ct_smokes_thrown=('user_side', lambda x: (x == 'ct').sum()),
+    t_smokes_thrown=('user_side', lambda x: (x == 't').sum()),
     smokes_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum())
 ).reset_index()
 df_all_smokes.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
