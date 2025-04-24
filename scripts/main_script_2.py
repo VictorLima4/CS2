@@ -44,8 +44,8 @@ def add_round_winners(ticks_df, rounds_df):
     rounds_df['CT_team_clan_name'] = None
     rounds_df['T_team_clan_name'] = None
     rounds_df['winner_clan_name'] = None
-    rounds_df['CT_team_current_equip_value'] = None
-    rounds_df['T_team_current_equip_value'] = None
+    rounds_df['ct_team_current_equip_value'] = None
+    rounds_df['t_team_current_equip_value'] = None
     rounds_df['ct_losing_streak'] = None
     rounds_df['t_losing_streak'] = None
 
@@ -101,8 +101,8 @@ def add_round_winners(ticks_df, rounds_df):
         rounds_df.at[idx, 'CT_team_clan_name'] = CT_team
         rounds_df.at[idx, 'T_team_clan_name'] = T_team
         rounds_df.at[idx, 'winner_clan_name'] = winner_clan
-        rounds_df.at[idx, 'CT_team_current_equip_value'] = CT_team_current_equip_value
-        rounds_df.at[idx, 'T_team_current_equip_value'] = T_team_current_equip_value
+        rounds_df.at[idx, 'ct_team_current_equip_value'] = CT_team_current_equip_value
+        rounds_df.at[idx, 't_team_current_equip_value'] = T_team_current_equip_value
         rounds_df.at[idx, 'ct_losing_streak'] = ct_losing_streak
         rounds_df.at[idx, 't_losing_streak'] = t_losing_streak
 
@@ -114,34 +114,34 @@ def add_buy_type(row):
     if row['round_num'] in [1, 13]:
         return "Pistol", "Pistol"
 
-    if row['CT_team_current_equip_value'] < 5000:
+    if row['ct_team_current_equip_value'] < 5000:
         ct_buy_type = "Full Eco"
-    elif 5000 <= row['CT_team_current_equip_value'] < 10000:
+    elif 5000 <= row['ct_team_current_equip_value'] < 10000:
         ct_buy_type = "Semi-Eco"
-    elif 10000 <= row['CT_team_current_equip_value'] < 20000:
+    elif 10000 <= row['ct_team_current_equip_value'] < 20000:
         ct_buy_type = "Semi-Buy"
-    elif row['CT_team_current_equip_value'] >= 20000:
+    elif row['ct_team_current_equip_value'] >= 20000:
         ct_buy_type = "Full Buy"
     else:
         ct_buy_type = "Unknown"
 
-    if row['T_team_current_equip_value'] < 5000:
+    if row['t_team_current_equip_value'] < 5000:
         t_buy_type = "Full Eco"
-    elif 5000 <= row['T_team_current_equip_value'] < 10000:
+    elif 5000 <= row['t_team_current_equip_value'] < 10000:
         t_buy_type = "Semi-Eco"
-    elif 10000 <= row['T_team_current_equip_value'] < 20000:
+    elif 10000 <= row['t_team_current_equip_value'] < 20000:
         t_buy_type = "Semi-Buy"
-    elif row['T_team_current_equip_value'] >= 20000:
+    elif row['t_team_current_equip_value'] >= 20000:
         t_buy_type = "Full Buy"
     else:
         t_buy_type = "Unknown"
 
     return ct_buy_type, t_buy_type
 
-def calculate_5v4_advantage(rounds_df, first_kills_df):
+def calculate_advantage_5v4(rounds_df, first_kills_df):
 
     # Makes sure the columns exists
-    rounds_df['5v4_advantage'] = None
+    rounds_df['advantage_5v4'] = None
 
     # Checks what team got the first kill
     for idx, row in rounds_df.iterrows():
@@ -156,9 +156,9 @@ def calculate_5v4_advantage(rounds_df, first_kills_df):
 
             # Defines the advantage based on the killer team
             if killer_team == 'ct':
-                rounds_df.at[idx, '5v4_advantage'] = 'ct'
+                rounds_df.at[idx, 'advantage_5v4'] = 'ct'
             elif killer_team == 't':
-                rounds_df.at[idx, '5v4_advantage'] = 't'
+                rounds_df.at[idx, 'advantage_5v4'] = 't'
 
     return rounds_df
 
@@ -235,22 +235,23 @@ for file_name in os.listdir(folder_path):
         first_kills = first_kills.groupby('round_num').first().reset_index()
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
 
+        # Creates Match Table
+        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name]})], ignore_index=True)
+        file_id_counter += 1
+
         # Rounds Data
         this_file_df_ticks = dem.ticks
         this_file_df_rounds = dem.rounds
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
-        this_file_df_rounds[['CT_buy_type', 'T_buy_type']] = this_file_df_rounds.apply(add_buy_type, axis=1, result_type='expand')
+        this_file_df_rounds[['ct_buy_type', 't_buy_type']] = this_file_df_rounds.apply(add_buy_type, axis=1, result_type='expand')
         first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
         first_kills = first_kills.groupby('round_num').first().reset_index()
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)   
 
-        this_file_df_rounds = calculate_5v4_advantage(this_file_df_rounds, df_all_first_kills)
-        this_file_df_rounds['demo_file_name'] = file_name
+        this_file_df_rounds = calculate_advantage_5v4(this_file_df_rounds, df_all_first_kills)
+        file_id = df_matches.loc[df_matches['file_name'] == file_name, 'file_id'].values[0]
+        this_file_df_rounds['file_id'] = file_id
         df_rounds = pd.concat([df_rounds, this_file_df_rounds], ignore_index=True)
-
-        # Creates Match Table
-        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name]})], ignore_index=True)
-        file_id_counter += 1
 
         # Creates rounds won columns
         this_file_team_rounds_won = this_file_df_rounds.groupby('winner_clan_name').agg(
@@ -470,6 +471,61 @@ players_id['steam_id'] = players_id['steam_id'].fillna(0).astype('int64')
 players_id['steam_id'] = players_id['steam_id'].astype('int64')
 players = players.merge(players_id, on='steam_id', how='left')
 players = players[["steam_id", "user_name"] + [col for col in players.columns if col not in ["steam_id", "user_name"]]]
+
+# Creates the teams table
+teams_table = pd.DataFrame({'team_clan_name': pd.concat([df_rounds['CT_team_clan_name'], df_rounds['T_team_clan_name']]).dropna().unique()})
+teams_table['team_id'] = range(1, len(teams_table) + 1)
+
+# Creates the player_match_summary table
+player_match_summary = df_rounds[['file_id', 'CT_team_clan_name', 'T_team_clan_name']].drop_duplicates()
+
+# Adds team ids for CT and T teams
+player_match_summary = player_match_summary.merge(
+    teams_table,
+    left_on='CT_team_clan_name',
+    right_on='team_clan_name',
+    how='left'
+).rename(columns={'team_id': 'CT_team_id'}).drop(columns=['team_clan_name'])
+
+player_match_summary = player_match_summary.merge(
+    teams_table,
+    left_on='T_team_clan_name',
+    right_on='team_clan_name',
+    how='left'
+).rename(columns={'team_id': 'T_team_id'}).drop(columns=['team_clan_name'])
+
+# Adds the players' steam ids to the player_match_summary table
+player_match_summary = player_match_summary.merge(
+    players[['steam_id', 'team_clan_name']],
+    left_on='CT_team_clan_name',
+    right_on='team_clan_name',
+    how='left'
+).rename(columns={'steam_id': 'CT_steam_id'})
+
+player_match_summary = player_match_summary.merge(
+    players[['steam_id', 'team_clan_name']],
+    left_on='T_team_clan_name',
+    right_on='team_clan_name',
+    how='left'
+).rename(columns={'steam_id': 'T_steam_id'})
+
+# Combines the CT and T players into a single table
+player_match_summary = pd.concat([
+    player_match_summary[['file_id', 'CT_steam_id', 'CT_team_id']].rename(
+        columns={'CT_steam_id': 'steam_id', 'CT_team_id': 'team_id'}
+    ),
+    player_match_summary[['file_id', 'T_steam_id', 'T_team_id']].rename(
+        columns={'T_steam_id': 'steam_id', 'T_team_id': 'team_id'}
+    )
+], ignore_index=True)
+
+# Drops duplicates values
+player_match_summary = player_match_summary.dropna().drop_duplicates()
+
+# Data Export
 players.to_csv('Data_Export.csv')
 df_rounds.to_csv('Rounds.csv')
 df_matches.to_csv('Matches.csv')
+teams_table.to_csv('teams_table.csv', index=False)
+player_match_summary.to_csv('player_match_summary.csv', index=False)
+
