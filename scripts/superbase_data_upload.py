@@ -43,21 +43,22 @@ utility_stats_cols = [
 ]
 utility_stats_df = df[utility_stats_cols]
 
-#1. Inserir times
+# Teams
 team_ids = {}
 for _, row in teams_df.iterrows():
     team_name = row['team_clan_name']
     result = supabase.table('teams').insert({'team_clan_name': team_name}).execute()
     team_ids[team_name] = result.data[0]['id']
 
-#2. Inserir jogadores (vinculados aos times)
+# Players
 for _, row in players_df.iterrows():
     supabase.table('players').insert({
         'steam_id': int(row['steam_id']),
         'user_name': row['user_name'],
         'team_id': team_ids[row['team_clan_name']]
     }).execute()
-
+    
+# Other tables
 def insert_table(df, table_name):
     for row in df.to_dict(orient="records"):
         supabase.table(table_name).insert(row).execute()

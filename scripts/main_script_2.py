@@ -25,17 +25,29 @@ df_rounds = pd.DataFrame()
 df_all_first_kills = pd.DataFrame()
 df_adr = pd.DataFrame()
 df_kast = pd.DataFrame()
+df_util_dmg = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
+df_matches = pd.DataFrame(columns=['file_id', 'file_name'])
 i = 1
+file_id_counter = 1
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
     rounds_df = rounds_df.to_pandas()
+    
+    # Changes the first round losing steak to 0
+    # This is necessary because the first round is not a losing streak
+    ticks_df.loc[ticks_df['round_num'] == 1, ['ct_losing_streak', 't_losing_streak']] = 0
+
     # Makes sure the columns exists
     rounds_df['CT_team_clan_name'] = None
     rounds_df['T_team_clan_name'] = None
     rounds_df['winner_clan_name'] = None
+    rounds_df['CT_team_current_equip_value'] = None
+    rounds_df['T_team_current_equip_value'] = None
+    rounds_df['ct_losing_streak'] = None
+    rounds_df['t_losing_streak'] = None
 
     for idx, row in rounds_df.iterrows():
         freeze_end_tick = row['freeze_end']
@@ -55,18 +67,98 @@ def add_round_winners(ticks_df, rounds_df):
         except IndexError:
             T_team = None
 
+        # Takes the current equip value for every team
+        try:
+            CT_team_current_equip_value = first_tick_df[first_tick_df['side'] == 'ct']['current_equip_value'].sum()
+        except KeyError:
+            CT_team_current_equip_value = None
+
+        try:
+            T_team_current_equip_value = first_tick_df[first_tick_df['side'] == 't']['current_equip_value'].sum()
+        except KeyError:
+            T_team_current_equip_value = None
+
+        # Takes the losing streak for every team
+        try:
+            ct_losing_streak = first_tick_df[first_tick_df['side'] == 'ct']['ct_losing_streak'].iloc[0]
+        except IndexError:
+            ct_losing_streak = None
+
+        try:
+            t_losing_streak = first_tick_df[first_tick_df['side'] == 't']['t_losing_streak'].iloc[0]
+        except IndexError:
+            t_losing_streak = None
+
         if winner == 'ct':
             winner_clan = CT_team
         elif winner in ['t', 'TERRORIST']:
             winner_clan = T_team
         else:
             winner_clan = None
-            print(f"[!] Round {idx} - winner indefinido ou inesperado: '{winner}'")
+            print(f"[!] Round {idx} - winner error: '{winner}'")
             
         # Fill Columns in the DataFrame
         rounds_df.at[idx, 'CT_team_clan_name'] = CT_team
         rounds_df.at[idx, 'T_team_clan_name'] = T_team
         rounds_df.at[idx, 'winner_clan_name'] = winner_clan
+        rounds_df.at[idx, 'CT_team_current_equip_value'] = CT_team_current_equip_value
+        rounds_df.at[idx, 'T_team_current_equip_value'] = T_team_current_equip_value
+        rounds_df.at[idx, 'ct_losing_streak'] = ct_losing_streak
+        rounds_df.at[idx, 't_losing_streak'] = t_losing_streak
+
+
+    return rounds_df
+
+def add_buy_type(row):
+
+    if row['round_num'] in [1, 13]:
+        return "Pistol", "Pistol"
+
+    if row['CT_team_current_equip_value'] < 5000:
+        ct_buy_type = "Full Eco"
+    elif 5000 <= row['CT_team_current_equip_value'] < 10000:
+        ct_buy_type = "Semi-Eco"
+    elif 10000 <= row['CT_team_current_equip_value'] < 20000:
+        ct_buy_type = "Semi-Buy"
+    elif row['CT_team_current_equip_value'] >= 20000:
+        ct_buy_type = "Full Buy"
+    else:
+        ct_buy_type = "Unknown"
+
+    if row['T_team_current_equip_value'] < 5000:
+        t_buy_type = "Full Eco"
+    elif 5000 <= row['T_team_current_equip_value'] < 10000:
+        t_buy_type = "Semi-Eco"
+    elif 10000 <= row['T_team_current_equip_value'] < 20000:
+        t_buy_type = "Semi-Buy"
+    elif row['T_team_current_equip_value'] >= 20000:
+        t_buy_type = "Full Buy"
+    else:
+        t_buy_type = "Unknown"
+
+    return ct_buy_type, t_buy_type
+
+def calculate_5v4_advantage(rounds_df, first_kills_df):
+
+    # Makes sure the columns exists
+    rounds_df['5v4_advantage'] = None
+
+    # Checks what team got the first kill
+    for idx, row in rounds_df.iterrows():
+        round_num = row['round_num']
+
+        # Filters the first kills DataFrame for the current round
+        first_kill = first_kills_df[first_kills_df['round_num'] == round_num]
+
+        if not first_kill.empty:
+            # Gets the team that made the first kill
+            killer_team = first_kill.iloc[0]['attacker_side']
+
+            # Defines the advantage based on the killer team
+            if killer_team == 'ct':
+                rounds_df.at[idx, '5v4_advantage'] = 'ct'
+            elif killer_team == 't':
+                rounds_df.at[idx, '5v4_advantage'] = 't'
 
     return rounds_df
 
@@ -75,7 +167,7 @@ for file_name in os.listdir(folder_path):
 
         file_path = os.path.join(folder_path, file_name)
         dem = Demo(file_path)
-        dem.parse(player_props=["team_clan_name","total_rounds_played"])
+        dem.parse(player_props=["team_clan_name","total_rounds_played", "current_equip_value", "ct_losing_streak", "t_losing_streak"])
 
         # Gets all the Players' steam_ids
         this_file_players_id = dem.events.get('player_spawn')
@@ -88,6 +180,7 @@ for file_name in os.listdir(folder_path):
         players_id = players_id[['user_steamid', 'user_name']].drop_duplicates()
 
         # Grenades Data
+        # Makes that the data frame is not empty and that the columns are in the right format
         this_file_flashes = dem.events.get('flashbang_detonate', pl.DataFrame())
         if this_file_flashes is not None and len(this_file_flashes) > 0:
             this_file_flashes = this_file_flashes.with_columns(
@@ -108,7 +201,17 @@ for file_name in os.listdir(folder_path):
             this_file_smoke = this_file_smoke.with_columns(
                 this_file_smoke['user_steamid'].cast(pl.Utf8)
             )
-
+        this_file_util_dmg = dem.events.get('player_hurt', pl.DataFrame())
+        if this_file_util_dmg is not None and len(this_file_util_dmg) > 0:
+            this_file_util_dmg = this_file_util_dmg.with_columns(
+                this_file_util_dmg['attacker_steamid'].cast(pl.Utf8)
+            )
+        util_dmg = this_file_util_dmg.filter(
+            (this_file_util_dmg["weapon"] == "hegrenade") |
+            (this_file_util_dmg["weapon"] == "molotov")   |
+            (this_file_util_dmg["weapon"] == "inferno")
+        )
+        # Makes sure that the data frames are not empty, converts them to pandas and appends them to the main data frame
         if this_file_flashes is not None and len(this_file_flashes) > 0:
             df_flashes = pd.concat([df_flashes, this_file_flashes.to_pandas()], ignore_index=True)
         if this_file_he is not None and len(this_file_he) > 0:
@@ -116,7 +219,9 @@ for file_name in os.listdir(folder_path):
         if this_file_infernos is not None and len(this_file_infernos) > 0:
             df_infernos = pd.concat([df_infernos, this_file_infernos.to_pandas()], ignore_index=True)
         if this_file_smoke is not None and len(this_file_smoke) > 0:
-            df_smoke = pd.concat([df_smoke, this_file_smoke.to_pandas()], ignore_index=True) 
+            df_smoke = pd.concat([df_smoke, this_file_smoke.to_pandas()], ignore_index=True)
+        if this_file_util_dmg is not None and len(this_file_util_dmg) > 0:
+            df_util_dmg = pd.concat([df_util_dmg, this_file_util_dmg.to_pandas()], ignore_index=True)
 
         # Opening Kills Data
         this_file_df_kills = awpy.stats.calculate_trades(demo=dem)
@@ -134,6 +239,19 @@ for file_name in os.listdir(folder_path):
         this_file_df_ticks = dem.ticks
         this_file_df_rounds = dem.rounds
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
+        this_file_df_rounds[['CT_buy_type', 'T_buy_type']] = this_file_df_rounds.apply(add_buy_type, axis=1, result_type='expand')
+        first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
+        first_kills = first_kills.groupby('round_num').first().reset_index()
+        df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)   
+
+        this_file_df_rounds = calculate_5v4_advantage(this_file_df_rounds, df_all_first_kills)
+        this_file_df_rounds['demo_file_name'] = file_name
+        df_rounds = pd.concat([df_rounds, this_file_df_rounds], ignore_index=True)
+
+        # Creates Match Table
+        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name]})], ignore_index=True)
+        file_id_counter += 1
+
         # Creates rounds won columns
         this_file_team_rounds_won = this_file_df_rounds.groupby('winner_clan_name').agg(
             total_rounds_won=('winner_clan_name', 'size'),
@@ -327,6 +445,17 @@ df_all_smokes = df_smoke.groupby('user_steamid').agg(
 df_all_smokes.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
 df_all_smokes['steam_id'] = df_all_smokes['steam_id'].astype('int64')
 
+# Filter the utility damage data to only include the relevant columns and group by player
+df_util_dmg = df_util_dmg[(df_util_dmg["weapon"] == "hegrenade") | (df_util_dmg["weapon"] == "molotov") | (df_util_dmg["weapon"] == "inferno")]
+df_util_dmg.loc[:, "total_dmg"] = df_util_dmg["dmg_health"]
+df_util_dmg = df_util_dmg.groupby("attacker_steamid").agg(
+    total_util_dmg=("total_dmg", "sum"),
+    ct_total_util_dmg=("total_dmg", lambda x: x[df_util_dmg.loc[x.index, "attacker_side"] == "ct"].sum()),
+    t_total_util_dmg=("total_dmg", lambda x: x[df_util_dmg.loc[x.index, "attacker_side"] == "t"].sum())
+).reset_index()
+df_util_dmg.rename(columns={'attacker_steamid': 'steam_id'}, inplace=True)
+df_util_dmg['steam_id'] = df_util_dmg['steam_id'].astype('int64')
+
 # Merges all the current data in a single dataframe
 players = players.merge(df_all_flashes, on='steam_id', how='left')
 players = players.merge(df_all_he, on='steam_id', how='left')
@@ -334,6 +463,7 @@ players = players.merge(df_all_infernos, on='steam_id', how='left')
 players = players.merge(df_all_smokes, on='steam_id', how='left')
 players['util_in_pistol_round'] = players['flahes_thrown_in_pistol_round'] + players['he_thrown_in_pistol_round'] + players['infernos_thrown_in_pistol_round'] +  players['smokes_thrown_in_pistol_round']
 players['total_util_thrown'] = players['flahes_thrown'] + players['he_thrown'] + players['infernos_thrown'] +  players['smokes_thrown']
+players = players.merge(df_util_dmg, on='steam_id', how='left')
 
 players_id.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
 players_id['steam_id'] = players_id['steam_id'].fillna(0).astype('int64')
@@ -341,3 +471,5 @@ players_id['steam_id'] = players_id['steam_id'].astype('int64')
 players = players.merge(players_id, on='steam_id', how='left')
 players = players[["steam_id", "user_name"] + [col for col in players.columns if col not in ["steam_id", "user_name"]]]
 players.to_csv('Data_Export.csv')
+df_rounds.to_csv('Rounds.csv')
+df_matches.to_csv('Matches.csv')
