@@ -12,7 +12,7 @@ from awpy.stats import kast
 from awpy.stats import rating
 from awpy.stats import calculate_trades
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\All_IEM_Katowice_2025\IEM_Katowice_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
@@ -28,7 +28,7 @@ df_kast = pd.DataFrame()
 df_util_dmg = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
-df_matches = pd.DataFrame(columns=['file_id', 'file_name'])
+df_matches = pd.DataFrame(columns=['file_id', 'file_name','event'])
 i = 1
 file_id_counter = 1
 
@@ -236,7 +236,7 @@ for file_name in os.listdir(folder_path):
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
 
         # Creates Match Table
-        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name]})], ignore_index=True)
+        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name], 'event': os.path.basename(os.path.dirname(file_name))})], ignore_index=True)
         file_id_counter += 1
 
         # Rounds Data
@@ -523,9 +523,9 @@ player_match_summary = pd.concat([
 player_match_summary = player_match_summary.dropna().drop_duplicates()
 
 # Data Export
-players.to_csv('Data_Export.csv')
-df_rounds.to_csv('Rounds.csv')
-df_matches.to_csv('Matches.csv')
+players.to_csv('data_export.csv')
+df_rounds.to_csv('rounds.csv')
+df_matches.to_csv('matches.csv')
 teams_table.to_csv('teams_table.csv', index=False)
 player_match_summary.to_csv('player_match_summary.csv', index=False)
 
