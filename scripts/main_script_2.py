@@ -236,7 +236,7 @@ for file_name in os.listdir(folder_path):
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
 
         # Creates Match Table
-        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name], 'event': os.path.basename(os.path.dirname(file_name))})], ignore_index=True)
+        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name], 'event': os.path.basename(os.path.dirname(file_path))})], ignore_index=True)
         file_id_counter += 1
 
         # Rounds Data
