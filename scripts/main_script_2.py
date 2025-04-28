@@ -11,8 +11,11 @@ from awpy.stats import adr
 from awpy.stats import kast
 from awpy.stats import rating
 from awpy.stats import calculate_trades
+from supabase import create_client, Client
+from dotenv import load_dotenv
+from requests import post, get
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
@@ -28,9 +31,9 @@ df_kast = pd.DataFrame()
 df_util_dmg = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
-df_matches = pd.DataFrame(columns=['file_id', 'file_name','event'])
+df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-file_id_counter = 1
+event_id = 2
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
@@ -41,8 +44,8 @@ def add_round_winners(ticks_df, rounds_df):
     ticks_df.loc[ticks_df['round_num'] == 1, ['ct_losing_streak', 't_losing_streak']] = 0
 
     # Makes sure the columns exists
-    rounds_df['CT_team_clan_name'] = None
-    rounds_df['T_team_clan_name'] = None
+    rounds_df['ct_team_clan_name'] = None
+    rounds_df['t_team_clan_name'] = None
     rounds_df['winner_clan_name'] = None
     rounds_df['ct_team_current_equip_value'] = None
     rounds_df['t_team_current_equip_value'] = None
@@ -98,8 +101,8 @@ def add_round_winners(ticks_df, rounds_df):
             print(f"[!] Round {idx} - winner error: '{winner}'")
             
         # Fill Columns in the DataFrame
-        rounds_df.at[idx, 'CT_team_clan_name'] = CT_team
-        rounds_df.at[idx, 'T_team_clan_name'] = T_team
+        rounds_df.at[idx, 'ct_team_clan_name'] = CT_team
+        rounds_df.at[idx, 't_team_clan_name'] = T_team
         rounds_df.at[idx, 'winner_clan_name'] = winner_clan
         rounds_df.at[idx, 'ct_team_current_equip_value'] = CT_team_current_equip_value
         rounds_df.at[idx, 't_team_current_equip_value'] = T_team_current_equip_value
@@ -161,6 +164,36 @@ def calculate_advantage_5v4(rounds_df, first_kills_df):
                 rounds_df.at[idx, 'advantage_5v4'] = 't'
 
     return rounds_df
+
+def insert_table(df, table_name, conflict_cols):
+    for row in df.to_dict(orient="records"):
+        supabase.table(table_name).upsert(row, on_conflict=conflict_cols).execute()
+
+def insert_or_update_player_history(players_df):
+    for _, row in players_df.iterrows():
+        steam_id = row["steam_id"]
+        team_id = row["team_id"]
+        
+        # Finds out if the players have changed teams
+        player_history_data = {
+            "steam_id": steam_id,
+            "team_id": team_id
+        }
+        # Updates the player history table with the new data
+        supabase.table("player_history").upsert(
+            player_history_data, 
+            on_conflict=["steam_id", "team_id"]
+        ).execute()
+
+def rounds_correction(df: pl.DataFrame) -> pl.DataFrame:
+    tem_start_1 = df.select(pl.col("start").eq(1).any()).item()
+
+    if tem_start_1:
+        df = df.with_columns(
+            (pl.col("round_num") - 1).alias("round_num")
+        )
+        
+    return df.filter(pl.col("start") != 1)
 
 for file_name in os.listdir(folder_path):
     if file_name.endswith('.dem'):
@@ -236,12 +269,14 @@ for file_name in os.listdir(folder_path):
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
 
         # Creates Match Table
-        df_matches = pd.concat([df_matches, pd.DataFrame({'file_id': [file_id_counter], 'file_name': [file_name], 'event': os.path.basename(os.path.dirname(file_path))})], ignore_index=True)
-        file_id_counter += 1
+        folder_name = os.path.basename(os.path.dirname(file_path))
+        file_name = file_name.replace(f"{folder_name}_", "")
+        df_matches = pd.concat([df_matches, pd.DataFrame({'match_name': [file_name], 'event_id': [event_id]})], ignore_index=True)
 
         # Rounds Data
         this_file_df_ticks = dem.ticks
         this_file_df_rounds = dem.rounds
+        this_file_df_rounds = rounds_correction(this_file_df_rounds)
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
         this_file_df_rounds[['ct_buy_type', 't_buy_type']] = this_file_df_rounds.apply(add_buy_type, axis=1, result_type='expand')
         first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
@@ -249,10 +284,9 @@ for file_name in os.listdir(folder_path):
         df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)   
 
         this_file_df_rounds = calculate_advantage_5v4(this_file_df_rounds, df_all_first_kills)
-        file_id = df_matches.loc[df_matches['file_name'] == file_name, 'file_id'].values[0]
-        this_file_df_rounds['file_id'] = file_id
+        this_file_df_rounds['match_name'] = file_name
         df_rounds = pd.concat([df_rounds, this_file_df_rounds], ignore_index=True)
-
+        df_rounds['event_id'] = event_id
         # Creates rounds won columns
         this_file_team_rounds_won = this_file_df_rounds.groupby('winner_clan_name').agg(
             total_rounds_won=('winner_clan_name', 'size'),
@@ -473,38 +507,82 @@ players = players.merge(players_id, on='steam_id', how='left')
 players = players[["steam_id", "user_name"] + [col for col in players.columns if col not in ["steam_id", "user_name"]]]
 
 # Creates the teams table
-teams_table = pd.DataFrame({'team_clan_name': pd.concat([df_rounds['CT_team_clan_name'], df_rounds['T_team_clan_name']]).dropna().unique()})
-teams_table['team_id'] = range(1, len(teams_table) + 1)
+teams = pd.DataFrame({'team_clan_name': pd.concat([df_rounds['ct_team_clan_name'], df_rounds['t_team_clan_name']]).dropna().unique()})
+
+# Load environment variables from .env file
+load_dotenv()
+url = os.getenv("url")
+key = os.getenv("key")
+supabase: Client = create_client(url, key)
+
+players_df = players[['steam_id', 'user_name', 'team_clan_name']].drop_duplicates().reset_index(drop=True)
+
+df_rounds['bomb_plant'] = df_rounds['bomb_plant'].replace({np.nan: None})
+df_rounds['bomb_site'] = df_rounds['bomb_site'].replace({np.nan: None})
+
+# Insert teams_data into the database
+teams_data = [{"team_clan_name": name} for name in teams]
+insert_table(teams, "teams", conflict_cols=["team_clan_name"])
+# Gets the team_id created by supabase
+response = supabase.table("teams").select("id, team_clan_name").execute()
+team_id_map = {item['team_clan_name']: item['id'] for item in response.data}
+# Map team_clan_name to team_id in players_df
+players_df["team_id"] = players_df["team_clan_name"].map(team_id_map)
+players_df = players_df[["steam_id", "user_name", "team_id"]].drop_duplicates()
+# Insert players_data into the database
+players_table = players_df.drop(columns=["team_id"])
+insert_table(players_table, "players", conflict_cols=["steam_id"])
+# Insert players_history into the database
+players_history = players_df.drop(columns=["user_name"])
+# players_history.loc[players_history.index[-1], 'team_id'] = 677
+insert_table(players_history[["steam_id", "team_id"]], "player_history", conflict_cols=["steam_id, team_id"])
+
+# Insert matches_data into the database
+insert_table(df_matches, "matches", conflict_cols=["match_name, event_id"])
+# Gets the file_id created by supabase
+response = supabase.table("matches").select("file_id, match_name", count="exact").execute()
+file_id_map = {item['match_name']: item['file_id'] for item in response.data}
+# Map match_name to file_id in rounds
+df_rounds["file_id"] = df_rounds["match_name"].map(file_id_map)
+insert_table(df_rounds, "rounds", conflict_cols=["round_num, match_name"])
+
+# Reads the teams table from the database
+response = supabase.table("teams").select("id, team_clan_name").execute()
+teams = pd.DataFrame(response.data)
+
+response = supabase.table("rounds").select("*").execute()
+df_rounds = pd.DataFrame(response.data)
 
 # Creates the player_match_summary table
-player_match_summary = df_rounds[['file_id', 'CT_team_clan_name', 'T_team_clan_name']].drop_duplicates()
+player_match_summary = df_rounds[['file_id', 'ct_team_clan_name', 't_team_clan_name']].drop_duplicates()
+players["steam_id"] = players["steam_id"].astype("Int64")
 
 # Adds team ids for CT and T teams
 player_match_summary = player_match_summary.merge(
-    teams_table,
-    left_on='CT_team_clan_name',
+    teams,
+    left_on='ct_team_clan_name',
     right_on='team_clan_name',
     how='left'
-).rename(columns={'team_id': 'CT_team_id'}).drop(columns=['team_clan_name'])
+).rename(columns={'id': 'CT_team_id'}).drop(columns=['team_clan_name'])
 
 player_match_summary = player_match_summary.merge(
-    teams_table,
-    left_on='T_team_clan_name',
+    teams,
+    left_on='t_team_clan_name',
     right_on='team_clan_name',
     how='left'
-).rename(columns={'team_id': 'T_team_id'}).drop(columns=['team_clan_name'])
+).rename(columns={'id': 'T_team_id'}).drop(columns=['team_clan_name'])
 
 # Adds the players' steam ids to the player_match_summary table
 player_match_summary = player_match_summary.merge(
     players[['steam_id', 'team_clan_name']],
-    left_on='CT_team_clan_name',
+    left_on='ct_team_clan_name',
     right_on='team_clan_name',
     how='left'
 ).rename(columns={'steam_id': 'CT_steam_id'})
 
 player_match_summary = player_match_summary.merge(
     players[['steam_id', 'team_clan_name']],
-    left_on='T_team_clan_name',
+    left_on='t_team_clan_name',
     right_on='team_clan_name',
     how='left'
 ).rename(columns={'steam_id': 'T_steam_id'})
@@ -520,12 +598,45 @@ player_match_summary = pd.concat([
 ], ignore_index=True)
 
 # Drops duplicates values
+player_match_summary.loc[:, 'event_id'] = event_id
 player_match_summary = player_match_summary.dropna().drop_duplicates()
 
-# Data Export
-players.to_csv('data_export.csv')
-df_rounds.to_csv('rounds.csv')
-df_matches.to_csv('matches.csv')
-teams_table.to_csv('teams_table.csv', index=False)
-player_match_summary.to_csv('player_match_summary.csv', index=False)
+# Creates 3 separated dataframes for kills, general stats and utility stats
+kill_stats_cols = [
+    'steam_id', 'kills', 'headshots', 'wallbang_kills', 'no_scope',
+    'through_smoke', 'airbone_kills', 'blind_kills', 'victim_blind_kills',
+    'awp_kills', 'pistol_kills', 'first_kills', 'ct_first_kills', 't_first_kills',
+    'first_deaths', 'ct_first_deaths', 't_first_deaths'
+]
+kill_stats_df = players[kill_stats_cols]
+kill_stats_df.loc[:, 'event_id'] = event_id
 
+general_stats_cols = [
+    'steam_id', 'assists', 'deaths', 'trade_kills', 'trade_deaths', 'kd', 'k_d_diff',
+    'adr_total', 'adr_ct_side', 'adr_t_side', 'kast_total', 'kast_ct_side',
+    'kast_t_side', 'total_rounds_won', 't_rounds_won', 'ct_rounds_won'
+]
+general_stats_df = players[general_stats_cols]
+general_stats_df.loc[:, 'event_id'] = event_id
+
+utility_stats_cols = [
+    'steam_id', 'assisted_flashes', 'flahes_thrown', 'ct_flahes_thrown', 't_flahes_thrown',
+    'flahes_thrown_in_pistol_round', 'he_thrown', 'ct_he_thrown', 't_he_thrown',
+    'he_thrown_in_pistol_round', 'infernos_thrown', 'ct_infernos_thrown', 't_infernos_thrown',
+    'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
+    'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg'
+]
+utility_stats_df = players[utility_stats_cols]
+utility_stats_df.loc[:, 'event_id'] = event_id
+
+insert_table(kill_stats_df, "kill_stats", conflict_cols=["steam_id, event_id"])
+insert_table(general_stats_df, "general_stats", conflict_cols=["steam_id, event_id"])
+insert_table(utility_stats_df, "utility_stats", conflict_cols=["steam_id, event_id"])
+insert_table(player_match_summary, "player_match_summary", conflict_cols=["file_id, steam_id, event_id"])
+
+# # Data export
+# players.to_csv(f'data_export_{folder_name}.csv')
+# df_rounds.to_csv(f'rounds_{folder_name}.csv')
+# df_matches.to_csv(f'matches_{folder_name}.csv')
+# teams.to_csv(f'teams_{folder_name}.csv')
+# player_match_summary.to_csv(f'player_match_summary_{folder_name}.csv')
