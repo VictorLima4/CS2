@@ -186,14 +186,28 @@ def insert_or_update_player_history(players_df):
         ).execute()
 
 def rounds_correction(df: pl.DataFrame) -> pl.DataFrame:
-    tem_start_1 = df.select(pl.col("start").eq(1).any()).item()
+    freeze_end_is_null = df.select(pl.col("freeze_end").first().is_null()).item()
 
-    if tem_start_1:
+    if freeze_end_is_null:
         df = df.with_columns(
             (pl.col("round_num") - 1).alias("round_num")
         )
         
-    return df.filter(pl.col("start") != 1)
+    return df.filter(pl.col("freeze_end").is_not_null())
+
+def fetch_all_rows(table_name, page_size=1000):
+    offset = 0
+    all_data = []
+
+    while True:
+        response = supabase.table(table_name).select("*").range(offset, offset + page_size - 1).execute()
+        data = response.data
+        if not data:
+            break
+        all_data.extend(data)
+        offset += page_size
+
+    return all_data
 
 for file_name in os.listdir(folder_path):
     if file_name.endswith('.dem'):
@@ -524,8 +538,8 @@ df_rounds['bomb_site'] = df_rounds['bomb_site'].replace({np.nan: None})
 teams_data = [{"team_clan_name": name} for name in teams]
 insert_table(teams, "teams", conflict_cols=["team_clan_name"])
 # Gets the team_id created by supabase
-response = supabase.table("teams").select("id, team_clan_name").execute()
-team_id_map = {item['team_clan_name']: item['id'] for item in response.data}
+teams = fetch_all_rows("teams")
+team_id_map = {item['team_clan_name']: item['id'] for item in teams}
 # Map team_clan_name to team_id in players_df
 players_df["team_id"] = players_df["team_clan_name"].map(team_id_map)
 players_df = players_df[["steam_id", "user_name", "team_id"]].drop_duplicates()
@@ -534,24 +548,20 @@ players_table = players_df.drop(columns=["team_id"])
 insert_table(players_table, "players", conflict_cols=["steam_id"])
 # Insert players_history into the database
 players_history = players_df.drop(columns=["user_name"])
-# players_history.loc[players_history.index[-1], 'team_id'] = 677
 insert_table(players_history[["steam_id", "team_id"]], "player_history", conflict_cols=["steam_id, team_id"])
 
 # Insert matches_data into the database
 insert_table(df_matches, "matches", conflict_cols=["match_name, event_id"])
 # Gets the file_id created by supabase
-response = supabase.table("matches").select("file_id, match_name", count="exact").execute()
-file_id_map = {item['match_name']: item['file_id'] for item in response.data}
+matches = fetch_all_rows("matches")
+file_id_map = {item['match_name']: item['file_id'] for item in matches}
 # Map match_name to file_id in rounds
 df_rounds["file_id"] = df_rounds["match_name"].map(file_id_map)
 insert_table(df_rounds, "rounds", conflict_cols=["round_num, match_name"])
 
 # Reads the teams table from the database
-response = supabase.table("teams").select("id, team_clan_name").execute()
-teams = pd.DataFrame(response.data)
-
-response = supabase.table("rounds").select("*").execute()
-df_rounds = pd.DataFrame(response.data)
+teams = pd.DataFrame(fetch_all_rows("teams"))
+df_rounds = pd.DataFrame(fetch_all_rows("rounds"))
 
 # Creates the player_match_summary table
 player_match_summary = df_rounds[['file_id', 'ct_team_clan_name', 't_team_clan_name']].drop_duplicates()
@@ -635,8 +645,8 @@ insert_table(utility_stats_df, "utility_stats", conflict_cols=["steam_id, event_
 insert_table(player_match_summary, "player_match_summary", conflict_cols=["file_id, steam_id, event_id"])
 
 # # Data export
-# players.to_csv(f'data_export_{folder_name}.csv')
-# df_rounds.to_csv(f'rounds_{folder_name}.csv')
+players.to_csv(f'data_export_{folder_name}.csv')
+df_rounds.to_csv(f'rounds_{folder_name}.csv')
 # df_matches.to_csv(f'matches_{folder_name}.csv')
 # teams.to_csv(f'teams_{folder_name}.csv')
 # player_match_summary.to_csv(f'player_match_summary_{folder_name}.csv')
