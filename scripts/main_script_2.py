@@ -15,7 +15,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from requests import post, get
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
