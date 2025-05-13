@@ -15,7 +15,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from requests import post, get
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
@@ -645,8 +645,8 @@ insert_table(utility_stats_df, "utility_stats", conflict_cols=["steam_id, event_
 insert_table(player_match_summary, "player_match_summary", conflict_cols=["file_id, steam_id, event_id"])
 
 # # Data export
-players.to_csv(f'data_export_{folder_name}.csv')
-df_rounds.to_csv(f'rounds_{folder_name}.csv')
+players.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\data_export_{folder_name}.csv')
+df_rounds.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\rounds_{folder_name}.csv')
 # df_matches.to_csv(f'matches_{folder_name}.csv')
 # teams.to_csv(f'teams_{folder_name}.csv')
 # player_match_summary.to_csv(f'player_match_summary_{folder_name}.csv')
