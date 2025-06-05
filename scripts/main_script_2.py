@@ -15,7 +15,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from requests import post, get
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\test_demos'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
@@ -33,7 +33,8 @@ team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-event_id = 2
+current_schema = "staging"
+event_id = 3
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
@@ -165,9 +166,9 @@ def calculate_advantage_5v4(rounds_df, first_kills_df):
 
     return rounds_df
 
-def insert_table(df, table_name, conflict_cols):
+def insert_table(df, current_schema, table_name, conflict_cols):
     for row in df.to_dict(orient="records"):
-        supabase.table(table_name).upsert(row, on_conflict=conflict_cols).execute()
+        supabase.schema(current_schema).table(table_name).upsert(row, on_conflict=conflict_cols).execute()
 
 def insert_or_update_player_history(players_df):
     for _, row in players_df.iterrows():
@@ -195,12 +196,12 @@ def rounds_correction(df: pl.DataFrame) -> pl.DataFrame:
         
     return df.filter(pl.col("freeze_end").is_not_null())
 
-def fetch_all_rows(table_name, page_size=1000):
+def fetch_all_rows(current_schema, table_name, page_size=1000):
     offset = 0
     all_data = []
 
     while True:
-        response = supabase.table(table_name).select("*").range(offset, offset + page_size - 1).execute()
+        response = supabase.schema(current_schema).table(table_name).select("*").range(offset, offset + page_size - 1).execute()
         data = response.data
         if not data:
             break
@@ -536,32 +537,32 @@ df_rounds['bomb_site'] = df_rounds['bomb_site'].replace({np.nan: None})
 
 # Insert teams_data into the database
 teams_data = [{"team_clan_name": name} for name in teams]
-insert_table(teams, "teams", conflict_cols=["team_clan_name"])
+insert_table(teams, current_schema, "teams", conflict_cols=["team_clan_name"])
 # Gets the team_id created by supabase
-teams = fetch_all_rows("teams")
+teams = fetch_all_rows(current_schema, "teams")
 team_id_map = {item['team_clan_name']: item['id'] for item in teams}
 # Map team_clan_name to team_id in players_df
 players_df["team_id"] = players_df["team_clan_name"].map(team_id_map)
 players_df = players_df[["steam_id", "user_name", "team_id"]].drop_duplicates()
 # Insert players_data into the database
 players_table = players_df.drop(columns=["team_id"])
-insert_table(players_table, "players", conflict_cols=["steam_id"])
+insert_table(players_table, current_schema, "players", conflict_cols=["steam_id"])
 # Insert players_history into the database
 players_history = players_df.drop(columns=["user_name"])
-insert_table(players_history[["steam_id", "team_id"]], "player_history", conflict_cols=["steam_id, team_id"])
+insert_table(players_history[["steam_id", "team_id"]], current_schema, "player_history", conflict_cols=["steam_id, team_id"])
 
 # Insert matches_data into the database
-insert_table(df_matches, "matches", conflict_cols=["match_name, event_id"])
+insert_table(df_matches, current_schema, "matches", conflict_cols=["match_name, event_id"])
 # Gets the file_id created by supabase
-matches = fetch_all_rows("matches")
+matches = fetch_all_rows(current_schema, "matches")
 file_id_map = {item['match_name']: item['file_id'] for item in matches}
 # Map match_name to file_id in rounds
 df_rounds["file_id"] = df_rounds["match_name"].map(file_id_map)
-insert_table(df_rounds, "rounds", conflict_cols=["round_num, match_name"])
+insert_table(df_rounds, current_schema, "rounds", conflict_cols=["round_num, match_name"])
 
 # Reads the teams table from the database
-teams = pd.DataFrame(fetch_all_rows("teams"))
-df_rounds = pd.DataFrame(fetch_all_rows("rounds"))
+teams = pd.DataFrame(fetch_all_rows(current_schema, "teams"))
+df_rounds = pd.DataFrame(fetch_all_rows(current_schema, "rounds"))
 
 # Creates the player_match_summary table
 player_match_summary = df_rounds[['file_id', 'ct_team_clan_name', 't_team_clan_name']].drop_duplicates()
@@ -639,10 +640,10 @@ utility_stats_cols = [
 utility_stats_df = players[utility_stats_cols]
 utility_stats_df.loc[:, 'event_id'] = event_id
 
-insert_table(kill_stats_df, "kill_stats", conflict_cols=["steam_id, event_id"])
-insert_table(general_stats_df, "general_stats", conflict_cols=["steam_id, event_id"])
-insert_table(utility_stats_df, "utility_stats", conflict_cols=["steam_id, event_id"])
-insert_table(player_match_summary, "player_match_summary", conflict_cols=["file_id, steam_id, event_id"])
+insert_table(kill_stats_df, current_schema, "kill_stats", conflict_cols=["steam_id, event_id"])
+insert_table(general_stats_df, current_schema, "general_stats", conflict_cols=["steam_id, event_id"])
+insert_table(utility_stats_df, current_schema, "utility_stats", conflict_cols=["steam_id, event_id"])
+insert_table(player_match_summary, current_schema, "player_match_summary", conflict_cols=["file_id, steam_id, event_id"])
 
 # # Data export
 players.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\data_export_{folder_name}.csv')

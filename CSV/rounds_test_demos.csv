@@ -1,0 +1,60 @@
+,id,round_num,start,freeze_end,end,official_end,winner,reason,bomb_plant,bomb_site,ct_team_clan_name,t_team_clan_name,winner_clan_name,ct_team_current_equip_value,t_team_current_equip_value,ct_losing_streak,t_losing_streak,ct_buy_type,t_buy_type,advantage_5v4,file_id,event_id,match_name
+0,1,1,540,6363,12448,12896,t,bomb_exploded,9824.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,4200,4250,0,0,Pistol,Pistol,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+1,2,2,12896,14176,23643,24091,t,bomb_exploded,21019.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,11950,20150,2,0,Semi-Buy,Full Buy,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+2,3,3,24091,25371,29749,30197,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,8350,22050,3,0,Semi-Eco,Full Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+3,4,4,30197,31477,38837,39285,ct,time_ran_out,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,25150,19400,1,1,Full Buy,Semi-Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+4,5,5,39285,40565,47343,47791,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,28600,5200,0,2,Full Buy,Semi-Eco,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+5,6,6,47791,49071,58805,59253,t,bomb_exploded,56181.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,27800,20800,0,3,Full Buy,Full Buy,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+6,7,7,59253,63458,70056,70504,ct,bomb_defused,67585.0,bombsite_b,Natus Vincere,FaZe Clan,Natus Vincere,29650,25700,1,1,Full Buy,Full Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+7,8,8,70504,71784,78962,79410,t,ct_killed,77678.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,29400,8950,0,2,Full Buy,Semi-Eco,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+8,9,9,79410,80690,88050,88498,ct,time_ran_out,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,26050,28050,1,0,Full Buy,Full Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+9,10,10,88498,92116,95721,96169,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,28550,10700,0,1,Full Buy,Semi-Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+10,11,11,96169,97449,104442,104890,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,30200,23300,0,2,Full Buy,Full Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+11,12,12,104890,106170,107643,108603,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,31850,12800,0,3,Full Buy,Semi-Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+12,13,13,108603,120945,128075,128523,t,ct_killed,126973.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,4200,4100,1,1,Pistol,Pistol,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+13,14,14,128523,129803,137705,138153,ct,bomb_defused,135806.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,10450,19650,2,0,Semi-Buy,Semi-Buy,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+14,15,15,138153,139433,147970,148418,ct,bomb_defused,145858.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,25300,12050,0,1,Full Buy,Semi-Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+15,16,16,148418,149698,152880,153328,t,ct_killed,,not_planted,FaZe Clan,Natus Vincere,Natus Vincere,24400,5900,0,2,Full Buy,Semi-Eco,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+16,17,17,153328,157542,166498,166946,t,bomb_exploded,163874.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,9900,23850,1,0,Semi-Eco,Full Buy,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+17,18,18,166946,168226,173502,173950,t,bomb_exploded,170878.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,3600,26300,2,0,Full Eco,Full Buy,t,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+18,19,19,173950,175230,183338,183338,t,ct_killed,182224.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,24150,29050,3,0,Full Buy,Full Buy,ct,3654,3,natus-vincere-vs-faze-m1-inferno.dem
+19,20,1,529,14020,17002,17450,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,4200,4050,0,0,Pistol,Pistol,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+20,21,2,17450,18730,21672,22120,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,20650,1500,0,2,Full Buy,Full Eco,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+21,22,3,22120,23400,31167,31615,t,ct_killed,29825.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,25200,21600,0,3,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+22,23,4,31615,32895,38239,38687,t,bomb_exploded,35615.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,23300,23800,1,1,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+23,24,5,38687,39967,48131,48579,t,bomb_exploded,45507.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,11050,25500,2,0,Semi-Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+24,25,6,48579,49859,55334,55782,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,27400,27350,3,0,Full Buy,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+25,26,7,55782,57062,60026,60474,t,ct_killed,60000.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,30350,15800,1,1,Full Buy,Semi-Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+26,27,8,60474,64802,73295,73743,t,bomb_exploded,70671.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,6550,25850,2,0,Semi-Eco,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+27,28,9,73743,93834,100964,101412,ct,bomb_defused,99492.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,26900,27650,3,0,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+28,29,10,101412,102692,107180,107628,t,bomb_exploded,104556.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,25700,23500,1,1,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+29,30,11,107628,108908,118402,118850,t,bomb_exploded,115778.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,12500,27550,2,0,Semi-Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+30,31,12,118850,120130,125051,126011,ct,bomb_defused,123175.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,29850,28050,3,0,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+31,32,13,126011,139048,144448,144896,t,bomb_exploded,141824.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,4350,4200,1,1,Pistol,Pistol,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+32,33,14,144896,146176,152578,153026,t,bomb_exploded,149954.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,2150,20650,2,0,Full Eco,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+33,34,15,153026,154306,159430,159878,t,bomb_exploded,156806.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,24150,24600,3,0,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+34,35,16,159878,164022,167293,167741,t,ct_killed,166297.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,23750,24900,4,0,Full Buy,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+35,36,17,167741,169021,171261,171709,t,ct_killed,,not_planted,Natus Vincere,FaZe Clan,FaZe Clan,21850,25100,5,0,Full Buy,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+36,37,18,171709,172989,178078,178526,t,ct_killed,,not_planted,Natus Vincere,FaZe Clan,FaZe Clan,5350,25200,6,0,Semi-Eco,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+37,38,19,178526,179806,183059,183507,t,ct_killed,182761.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,27500,27250,7,0,Full Buy,Full Buy,ct,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+38,39,20,183507,184787,192147,192595,ct,time_ran_out,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,18150,27250,8,0,Semi-Buy,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+39,40,21,192595,196748,201276,201276,t,ct_killed,200222.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,26650,27350,3,1,Full Buy,Full Buy,t,3655,3,natus-vincere-vs-faze-m2-mirage.dem
+40,41,1,4724,18580,21360,21808,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,5850,5050,0,0,Pistol,Pistol,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+41,42,2,21808,23088,27931,28379,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,20200,1500,0,2,Full Buy,Full Eco,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+42,43,3,28379,29659,37147,37595,ct,bomb_defused,35979.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,22950,23700,0,3,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+43,44,4,37595,38875,45610,46058,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,24800,9150,0,4,Full Buy,Semi-Eco,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+44,45,5,46058,47338,52967,53415,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,28150,26450,0,5,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+45,46,6,53415,54695,59082,59530,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,29950,10550,0,6,Full Buy,Semi-Buy,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+46,47,7,59530,63278,68766,69214,t,ct_killed,67185.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,30550,24400,0,7,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+47,48,8,69214,70494,77229,77677,ct,bomb_defused,75913.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,27650,25250,1,3,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+48,49,9,77677,78957,86429,86877,ct,bomb_defused,85819.0,bombsite_b,FaZe Clan,Natus Vincere,FaZe Clan,27400,21300,0,4,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+49,50,10,86877,91020,95156,95604,ct,t_killed,,not_planted,FaZe Clan,Natus Vincere,FaZe Clan,28300,24000,0,5,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+50,51,11,95604,96884,102967,103415,t,bomb_exploded,100343.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,29950,12800,0,6,Full Buy,Semi-Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+51,52,12,103415,106810,113642,114602,t,ct_killed,113105.0,bombsite_b,FaZe Clan,Natus Vincere,Natus Vincere,23150,29050,1,3,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+52,53,13,114602,126853,128999,129447,t,ct_killed,128599.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,4350,4400,1,1,Pistol,Pistol,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+53,54,14,129447,130727,137237,137685,t,ct_killed,136434.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,1000,20550,2,0,Full Eco,Full Buy,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+54,55,15,137685,138965,146551,146999,t,ct_killed,145028.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,23600,23700,3,0,Full Buy,Full Buy,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+55,56,16,146999,148279,151598,152046,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,16850,25000,4,0,Semi-Buy,Full Buy,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+56,57,17,152046,153326,156759,157207,ct,t_killed,,not_planted,Natus Vincere,FaZe Clan,Natus Vincere,26250,1500,2,1,Full Buy,Full Eco,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+57,58,18,157207,158487,164319,164767,ct,bomb_defused,163488.0,bombsite_b,Natus Vincere,FaZe Clan,Natus Vincere,28750,24500,1,2,Full Buy,Full Buy,t,3656,3,natus-vincere-vs-faze-m3-ancient.dem
+58,59,19,164767,166047,171024,171024,t,ct_killed,168736.0,bombsite_b,Natus Vincere,FaZe Clan,FaZe Clan,29650,8800,0,3,Full Buy,Semi-Eco,ct,3656,3,natus-vincere-vs-faze-m3-ancient.dem
