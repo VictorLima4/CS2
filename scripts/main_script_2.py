@@ -39,10 +39,6 @@ event_id = 3
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
     rounds_df = rounds_df.to_pandas()
-    
-    # Changes the first round losing steak to 0
-    # This is necessary because the first round is not a losing streak
-    ticks_df.loc[ticks_df['round_num'] == 1, ['ct_losing_streak', 't_losing_streak']] = 0
 
     # Makes sure the columns exists
     rounds_df['ct_team_clan_name'] = None
@@ -82,17 +78,7 @@ def add_round_winners(ticks_df, rounds_df):
         except KeyError:
             T_team_current_equip_value = None
 
-        # Takes the losing streak for every team
-        try:
-            ct_losing_streak = first_tick_df[first_tick_df['side'] == 'ct']['ct_losing_streak'].iloc[0]
-        except IndexError:
-            ct_losing_streak = None
-
-        try:
-            t_losing_streak = first_tick_df[first_tick_df['side'] == 't']['t_losing_streak'].iloc[0]
-        except IndexError:
-            t_losing_streak = None
-
+        # Determines the winner team name
         if winner == 'ct':
             winner_clan = CT_team
         elif winner in ['t', 'TERRORIST']:
@@ -107,11 +93,35 @@ def add_round_winners(ticks_df, rounds_df):
         rounds_df.at[idx, 'winner_clan_name'] = winner_clan
         rounds_df.at[idx, 'ct_team_current_equip_value'] = CT_team_current_equip_value
         rounds_df.at[idx, 't_team_current_equip_value'] = T_team_current_equip_value
-        rounds_df.at[idx, 'ct_losing_streak'] = ct_losing_streak
-        rounds_df.at[idx, 't_losing_streak'] = t_losing_streak
-
 
     return rounds_df
+
+def add_losing_streaks(df: pd.DataFrame) -> pd.DataFrame:
+    ct_losing_streak = []
+    t_losing_streak = []
+
+    ct_streak = 0
+    t_streak = 0
+
+    for _, row in df.iterrows():
+        ct_team = row['ct_team_clan_name']
+        t_team = row['t_team_clan_name']
+        winner = row['winner_clan_name']
+        
+        if winner == ct_team:
+            ct_streak = 0
+            t_streak += 1
+        else:  # winner == t_team
+            t_streak = 0
+            ct_streak += 1
+
+        ct_losing_streak.append(ct_streak)
+        t_losing_streak.append(t_streak)
+
+    df['ct_losing_streak'] = ct_losing_streak
+    df['t_losing_streak'] = t_losing_streak
+
+    return df
 
 def add_buy_type(row):
 
@@ -293,6 +303,7 @@ for file_name in os.listdir(folder_path):
         this_file_df_rounds = dem.rounds
         this_file_df_rounds = rounds_correction(this_file_df_rounds)
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
+        this_file_df_rounds = add_losing_streaks(this_file_df_rounds)
         this_file_df_rounds[['ct_buy_type', 't_buy_type']] = this_file_df_rounds.apply(add_buy_type, axis=1, result_type='expand')
         first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
         first_kills = first_kills.groupby('round_num').first().reset_index()
@@ -346,7 +357,7 @@ player_kills = df_kills.groupby('attacker_steamid').agg(
     trade_kills=('was_traded', lambda x: (x == 1).sum()),
     no_scope=('noscope', lambda x: (x == 1).sum()),
     through_smoke=('thrusmoke', lambda x: (x == 1).sum()),
-    airbone_kills=('attackerinair', lambda x: (x == 1).sum()),
+    airborne_kills=('attackerinair', lambda x: (x == 1).sum()),
     blind_kills=('attackerblind', lambda x: (x == 1).sum()),
     victim_blind_kills=('assistedflash', lambda x: (x == 1).sum()),
     attacker_team_clan_name=('attacker_team_clan_name', 'first'),
@@ -454,10 +465,10 @@ players = players.merge(player_first_kills, on='steam_id', how='left')
 df_flashes.rename(columns={'user_total_rounds_played': 'round'}, inplace=True)
 df_flashes['round'] = df_flashes['round'] + 1
 df_all_flashes = df_flashes.groupby('user_steamid').agg(
-    flahes_thrown=('user_steamid', 'size'),
-    ct_flahes_thrown=('user_side', lambda x: (x == 'ct').sum()),
-    t_flahes_thrown=('user_side', lambda x: (x == 't').sum()),
-    flahes_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum()),
+    flashes_thrown=('user_steamid', 'size'),
+    ct_flashes_thrown=('user_side', lambda x: (x == 'ct').sum()),
+    t_flashes_thrown=('user_side', lambda x: (x == 't').sum()),
+    flashes_thrown_in_pistol_round=('round', lambda x: ((x == 1) | (x == 13)).sum()),
 ).reset_index()
 df_all_flashes.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
 df_all_flashes['steam_id'] = df_all_flashes['steam_id'].astype('int64')
@@ -511,8 +522,8 @@ players = players.merge(df_all_flashes, on='steam_id', how='left')
 players = players.merge(df_all_he, on='steam_id', how='left')
 players = players.merge(df_all_infernos, on='steam_id', how='left')
 players = players.merge(df_all_smokes, on='steam_id', how='left')
-players['util_in_pistol_round'] = players['flahes_thrown_in_pistol_round'] + players['he_thrown_in_pistol_round'] + players['infernos_thrown_in_pistol_round'] +  players['smokes_thrown_in_pistol_round']
-players['total_util_thrown'] = players['flahes_thrown'] + players['he_thrown'] + players['infernos_thrown'] +  players['smokes_thrown']
+players['util_in_pistol_round'] = players['flashes_thrown_in_pistol_round'] + players['he_thrown_in_pistol_round'] + players['infernos_thrown_in_pistol_round'] +  players['smokes_thrown_in_pistol_round']
+players['total_util_thrown'] = players['flashes_thrown'] + players['he_thrown'] + players['infernos_thrown'] +  players['smokes_thrown']
 players = players.merge(df_util_dmg, on='steam_id', how='left')
 
 players_id.rename(columns={'user_steamid': 'steam_id'}, inplace=True)
@@ -615,7 +626,7 @@ player_match_summary = player_match_summary.dropna().drop_duplicates()
 # Creates 3 separated dataframes for kills, general stats and utility stats
 kill_stats_cols = [
     'steam_id', 'kills', 'headshots', 'wallbang_kills', 'no_scope',
-    'through_smoke', 'airbone_kills', 'blind_kills', 'victim_blind_kills',
+    'through_smoke', 'airborne_kills', 'blind_kills', 'victim_blind_kills',
     'awp_kills', 'pistol_kills', 'first_kills', 'ct_first_kills', 't_first_kills',
     'first_deaths', 'ct_first_deaths', 't_first_deaths'
 ]
@@ -631,8 +642,8 @@ general_stats_df = players[general_stats_cols]
 general_stats_df.loc[:, 'event_id'] = event_id
 
 utility_stats_cols = [
-    'steam_id', 'assisted_flashes', 'flahes_thrown', 'ct_flahes_thrown', 't_flahes_thrown',
-    'flahes_thrown_in_pistol_round', 'he_thrown', 'ct_he_thrown', 't_he_thrown',
+    'steam_id', 'assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown',
+    'flashes_thrown_in_pistol_round', 'he_thrown', 'ct_he_thrown', 't_he_thrown',
     'he_thrown_in_pistol_round', 'infernos_thrown', 'ct_infernos_thrown', 't_infernos_thrown',
     'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
     'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg'
