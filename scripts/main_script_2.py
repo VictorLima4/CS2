@@ -15,7 +15,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from requests import post, get
 
-folder_path = r'C:\Users\bayli\Documents\CS Demos\test_demos'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
@@ -33,8 +33,8 @@ team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-current_schema = "staging"
-event_id = 3
+current_schema = "public"
+event_id = 2
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
