@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import polars as pl
 import os
+import time
 import awpy
 from demoparser2 import DemoParser
 from awpy import Demo
@@ -15,6 +16,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from requests import post, get
 
+start = time.time()
 folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
@@ -29,12 +31,14 @@ df_all_first_kills = pd.DataFrame()
 df_adr = pd.DataFrame()
 df_kast = pd.DataFrame()
 df_util_dmg = pd.DataFrame()
+df_clutches = pd.DataFrame()
+df_multikills = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "public"
-event_id = 2
+event_id = 1
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
@@ -220,12 +224,203 @@ def fetch_all_rows(current_schema, table_name, page_size=1000):
 
     return all_data
 
+def calculate_clutches(dem) -> pl.DataFrame:
+    clutches_data = []
+
+    all_players = dem.ticks.select(["steamid", "name"]).unique()
+    player_name_map = {row["steamid"]: row["name"] for row in all_players.iter_rows(named=True)}
+
+    for round_info in dem.rounds.iter_rows(named=True):
+        round_num = round_info['round_num']
+        round_start_tick = round_info['start']
+        round_end_tick = round_info['end']
+        winning_team = round_info['winner']
+
+        round_ticks_df = dem.ticks.filter(
+            (pl.col("tick") >= round_start_tick) & (pl.col("tick") <= round_end_tick)
+        )
+        round_kills_df = dem.kills.filter(
+            (pl.col("round_num") == round_num) &
+            (pl.col("tick") >= round_start_tick) & (pl.col("tick") <= round_end_tick)
+        ).sort("tick")
+
+        alive_counts_per_tick = round_ticks_df.group_by("tick").agg(
+            (pl.when(pl.col("side") == "ct").then(pl.col("is_alive")).otherwise(0)).sum().alias("ct_alive"),
+            (pl.when(pl.col("side") == "t").then(pl.col("is_alive")).otherwise(0)).sum().alias("t_alive")
+        )
+        
+        players_alive_at_tick = round_ticks_df.group_by("tick").agg(
+            pl.struct(["steamid", "is_alive", "side"]).alias("players_state")
+        )
+        
+        merged_round_data = alive_counts_per_tick.join(
+            players_alive_at_tick, on="tick", how="left"
+        ).sort("tick")
+
+
+        clutch_active = False
+        clutcher_steamid = None
+        clutcher_team_side = None
+        clutch_start_tick = None
+        opponents_at_start = 0
+
+        for i, tick_data in enumerate(merged_round_data.iter_rows(named=True)):
+            current_tick = tick_data['tick']
+            ct_alive = tick_data['ct_alive']
+            t_alive = tick_data['t_alive']
+            players_state = tick_data['players_state']
+            
+            is_clutch_condition_met = (ct_alive == 1 and t_alive >= 2) or \
+                                        (t_alive == 1 and ct_alive >= 2)
+
+            clutcher_is_alive_this_tick = False
+            if clutch_active and clutcher_steamid:
+                for p_state in players_state:
+                    if p_state['steamid'] == clutcher_steamid and p_state['is_alive']:
+                        clutcher_is_alive_this_tick = True
+                        break
+
+            if is_clutch_condition_met:
+                if not clutch_active: # Start of a NEW clutch
+                    clutch_active = True
+                    clutch_start_tick = current_tick
+                    
+                    if ct_alive == 1:
+                        clutcher_team_side = 'ct'
+                        opponents_at_start = t_alive # Capture opponents at the start
+                    else: # t_alive == 1
+                        clutcher_team_side = 't'
+                        opponents_at_start = ct_alive # Capture opponents at the start
+                    
+                    for p_state in players_state:
+                        if p_state['is_alive'] and p_state['side'] == clutcher_team_side:
+                            clutcher_steamid = p_state['steamid']
+                            break
+            
+            else: # Clutch condition (1vX, X>=2) is NO longer met in this tick
+                if clutch_active: # But there was an active clutch in the previous tick
+                    # The clutch ends if the clutcher dies
+                    if not clutcher_is_alive_this_tick:
+                        clutch_end_tick = current_tick # Clutch ends with the clutcher's death
+                        
+                        # --- CLUTCH OUTCOME: "lost" ---
+                        clutch_outcome = "lost" # Clutcher died
+
+                        final_clutch_kills = 0
+                        if clutcher_steamid:
+                            final_clutch_kills = round_kills_df.filter(
+                                (pl.col("tick") >= clutch_start_tick) &
+                                (pl.col("tick") <= clutch_end_tick) &
+                                (pl.col("attacker_steamid") == clutcher_steamid)
+                            ).shape[0]
+
+                        # Determine if the clutcher's team won the round
+                        round_team_won = (clutcher_team_side == winning_team.lower()) 
+
+                        # Clutcher did not survive the round if they died to end the clutch
+                        clutcher_survived_round = False
+
+                        clutches_data.append({
+                            "round_num": round_num,
+                            "clutcher_steamid": clutcher_steamid,
+                            "clutcher_name": player_name_map.get(clutcher_steamid, "Unknown"),
+                            "clutcher_team_side": clutcher_team_side,
+                            "opponents_at_start": opponents_at_start,
+                            "clutch_start_tick": clutch_start_tick,
+                            "clutch_end_tick": clutch_end_tick,
+                            "clutch_kills": final_clutch_kills,
+                            "clutch_outcome": clutch_outcome,
+                            "round_won": round_team_won,
+                            "clutcher_survived_round": clutcher_survived_round
+                        })
+                        
+                        clutch_active = False
+                        clutcher_steamid = None
+                        clutcher_team_side = None
+                        clutch_start_tick = None
+                        opponents_at_start = 0
+
+        # --- Round end processing logic ---
+        if clutch_active:
+            clutch_end_tick = round_end_tick 
+            
+            final_clutch_kills = 0
+            if clutcher_steamid:
+                final_clutch_kills = round_kills_df.filter(
+                    (pl.col("tick") >= clutch_start_tick) &
+                    (pl.col("tick") <= clutch_end_tick) &
+                    (pl.col("attacker_steamid") == clutcher_steamid)
+                ).shape[0]
+
+            # Determine if the clutcher's team won the round
+            round_team_won = (clutcher_team_side == winning_team.lower())
+
+            # NOVO: Determinar o clutch_outcome para o final da rodada
+            if round_team_won:
+                # --- CLUTCH OUTCOME: "won" ---
+                clutch_outcome = "won" # Clutcher's team won the round
+            else:
+                # --- CLUTCH OUTCOME: "save" ---
+                clutch_outcome = "save" # Clutcher survived, but team lost the round (e.g., time expired, bomb detonated for opponents)
+            
+            # Determine if the clutcher survived the round (always True if we reach this block)
+            # We already know clutcher is alive at this point because `clutch_active` is True
+            # and they weren't caught by the `if not clutcher_is_alive_this_tick` block.
+            clutcher_survived_round = True # If clutch_active is true at end of round, clutcher survived.
+
+            clutches_data.append({
+                "round_num": round_num,
+                "clutcher_steamid": clutcher_steamid,
+                "clutcher_name": player_name_map.get(clutcher_steamid, "Unknown"),
+                "clutcher_team_side": clutcher_team_side,
+                "opponents_at_start": opponents_at_start,
+                "clutch_start_tick": clutch_start_tick,
+                "clutch_end_tick": clutch_end_tick,
+                "clutch_kills": final_clutch_kills,
+                "clutch_outcome": clutch_outcome, # Renomeado
+                "round_won": round_team_won,
+                "clutcher_survived_round": clutcher_survived_round
+            })
+            
+            clutch_active = False
+            clutcher_steamid = None
+            clutcher_team_side = None
+            clutch_start_tick = None
+            opponents_at_start = 0
+
+    clutches_df = pl.DataFrame(clutches_data)
+    return clutches_df
+
+def calculate_multikill_rounds(dem) -> pl.DataFrame:
+    # Ensure 'dem.kills' is not empty before proceeding
+    if dem.kills is None or dem.kills.shape[0] == 0:
+        return pl.DataFrame({"steamid": pl.Series(dtype=pl.UInt64),
+                             "2k": pl.Series(dtype=pl.UInt32),
+                             "3k": pl.Series(dtype=pl.UInt32),
+                             "4k": pl.Series(dtype=pl.UInt32),
+                             "5k": pl.Series(dtype=pl.UInt32)})
+
+    kills_per_player_per_round = dem.kills.group_by(["round_num", "attacker_steamid"]).agg(
+        pl.len().alias("kills_in_round")
+    )
+
+    multikill_counts = kills_per_player_per_round.group_by("attacker_steamid").agg(
+        pl.when(pl.col("kills_in_round") == 2).then(1).otherwise(0).sum().alias("2k"),
+        pl.when(pl.col("kills_in_round") == 3).then(1).otherwise(0).sum().alias("3k"),
+        pl.when(pl.col("kills_in_round") == 4).then(1).otherwise(0).sum().alias("4k"),
+        pl.when(pl.col("kills_in_round") == 5).then(1).otherwise(0).sum().alias("5k")
+    )
+
+    multikill_counts = multikill_counts.rename({"attacker_steamid": "steam_id"})
+
+    return multikill_counts
+
 for file_name in os.listdir(folder_path):
     if file_name.endswith('.dem'):
 
         file_path = os.path.join(folder_path, file_name)
         dem = Demo(file_path)
-        dem.parse(player_props=["team_clan_name","total_rounds_played", "current_equip_value", "ct_losing_streak", "t_losing_streak"])
+        dem.parse(player_props=["team_clan_name","total_rounds_played", "current_equip_value", "ct_losing_streak", "t_losing_streak", "is_alive"])
 
         # Gets all the Players' steam_ids
         this_file_players_id = dem.events.get('player_spawn')
@@ -346,6 +541,25 @@ for file_name in os.listdir(folder_path):
         df_kast = df_kast.groupby(['steamid','side'], as_index=False).sum()
         df_kast = df_kast[df_kast['side'] != 'all']
 
+        # Creates Clutches Dataframe
+        this_file_clutches = calculate_clutches(dem)
+        this_file_clutches = this_file_clutches.with_columns(
+            this_file_clutches['clutcher_steamid'].cast(pl.Utf8)
+        )
+        this_file_clutches = this_file_clutches.to_pandas()
+        this_file_clutches['match_name'] = file_name
+        df_clutches = pd.concat([df_clutches,this_file_clutches], ignore_index=True)
+        df_clutches = df_clutches.drop(['clutcher_name', 'clutch_start_tick', 'clutch_end_tick'], axis=1)
+        df_clutches['file_id'] = event_id
+
+        # Creates Multikills Dataframe
+        this_file_multikills = calculate_multikill_rounds(dem)
+        this_file_multikills = this_file_multikills.with_columns(
+            this_file_multikills['steam_id'].cast(pl.Utf8)
+        )
+        this_file_multikills = this_file_multikills.to_pandas()
+        df_multikills = pd.concat([df_multikills, this_file_multikills], ignore_index=True)
+
         print(f"{i}: Processed {file_name}")
         i = i + 1
 
@@ -406,7 +620,6 @@ df_adr = pd.DataFrame({
 df_adr.rename(columns={'steamid': 'steam_id'}, inplace=True)
 df_adr['steam_id'] = df_adr['steam_id'].astype('int64')
 players = players.merge(df_adr, on='steam_id', how='left')
-
 
 # KAST Total
 kast_total = df_kast.groupby('steamid').agg({'kast_rounds': 'sum', 'n_rounds': 'sum'})
@@ -517,11 +730,16 @@ df_util_dmg = df_util_dmg.groupby("attacker_steamid").agg(
 df_util_dmg.rename(columns={'attacker_steamid': 'steam_id'}, inplace=True)
 df_util_dmg['steam_id'] = df_util_dmg['steam_id'].astype('int64')
 
+# Group the multikills data
+df_multikills = df_multikills.groupby('steam_id')[['2k', '3k', '4k', '5k']].sum().reset_index()
+df_multikills['steam_id'] = df_multikills['steam_id'].astype('int64')
+
 # Merges all the current data in a single dataframe
 players = players.merge(df_all_flashes, on='steam_id', how='left')
 players = players.merge(df_all_he, on='steam_id', how='left')
 players = players.merge(df_all_infernos, on='steam_id', how='left')
 players = players.merge(df_all_smokes, on='steam_id', how='left')
+players = players.merge(df_multikills, on='steam_id', how='left')
 players['util_in_pistol_round'] = players['flashes_thrown_in_pistol_round'] + players['he_thrown_in_pistol_round'] + players['infernos_thrown_in_pistol_round'] +  players['smokes_thrown_in_pistol_round']
 players['total_util_thrown'] = players['flashes_thrown'] + players['he_thrown'] + players['infernos_thrown'] +  players['smokes_thrown']
 players = players.merge(df_util_dmg, on='steam_id', how='left')
@@ -567,9 +785,13 @@ insert_table(df_matches, current_schema, "matches", conflict_cols=["match_name, 
 # Gets the file_id created by supabase
 matches = fetch_all_rows(current_schema, "matches")
 file_id_map = {item['match_name']: item['file_id'] for item in matches}
-# Map match_name to file_id in rounds
+# Map match_name to file_id in df_rounds and df_clutches
 df_rounds["file_id"] = df_rounds["match_name"].map(file_id_map)
-insert_table(df_rounds, current_schema, "rounds", conflict_cols=["round_num, match_name"])
+df_clutches["file_id"] = df_clutches["match_name"].map(file_id_map)
+# Insert rounds into the database
+insert_table(df_rounds, current_schema, "rounds", conflict_cols=["round_num, file_id"])
+# Insert clutches_data into the database
+insert_table(df_clutches, current_schema, "clutches_data", conflict_cols=["round_num, file_id"])
 
 # Reads the teams table from the database
 teams = pd.DataFrame(fetch_all_rows(current_schema, "teams"))
@@ -628,9 +850,9 @@ kill_stats_cols = [
     'steam_id', 'kills', 'headshots', 'wallbang_kills', 'no_scope',
     'through_smoke', 'airborne_kills', 'blind_kills', 'victim_blind_kills',
     'awp_kills', 'pistol_kills', 'first_kills', 'ct_first_kills', 't_first_kills',
-    'first_deaths', 'ct_first_deaths', 't_first_deaths'
+    'first_deaths', 'ct_first_deaths', 't_first_deaths', '2k', '3k', '4k', '5k'
 ]
-kill_stats_df = players[kill_stats_cols]
+kill_stats_df = players[kill_stats_cols].copy()
 kill_stats_df.loc[:, 'event_id'] = event_id
 
 general_stats_cols = [
@@ -638,7 +860,7 @@ general_stats_cols = [
     'adr_total', 'adr_ct_side', 'adr_t_side', 'kast_total', 'kast_ct_side',
     'kast_t_side', 'total_rounds_won', 't_rounds_won', 'ct_rounds_won'
 ]
-general_stats_df = players[general_stats_cols]
+general_stats_df = players[general_stats_cols].copy()
 general_stats_df.loc[:, 'event_id'] = event_id
 
 utility_stats_cols = [
@@ -648,7 +870,7 @@ utility_stats_cols = [
     'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
     'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg'
 ]
-utility_stats_df = players[utility_stats_cols]
+utility_stats_df = players[utility_stats_cols].copy()
 utility_stats_df.loc[:, 'event_id'] = event_id
 
 insert_table(kill_stats_df, current_schema, "kill_stats", conflict_cols=["steam_id, event_id"])
@@ -659,6 +881,10 @@ insert_table(player_match_summary, current_schema, "player_match_summary", confl
 # # Data export
 players.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\data_export_{folder_name}.csv')
 df_rounds.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\rounds_{folder_name}.csv')
+df_clutches.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\clutches_{folder_name}.csv')
 # df_matches.to_csv(f'matches_{folder_name}.csv')
 # teams.to_csv(f'teams_{folder_name}.csv')
 # player_match_summary.to_csv(f'player_match_summary_{folder_name}.csv')
+
+end = time.time()
+print(f"Processed {i} files in {end - start:.2f} seconds.")
