@@ -227,10 +227,13 @@ def fetch_all_rows(current_schema, table_name, page_size=1000):
 def calculate_clutches(dem) -> pl.DataFrame:
     clutches_data = []
 
+    # Apply rounds_correction to dem.rounds
+    corrected_rounds = rounds_correction(dem.rounds)
+
     all_players = dem.ticks.select(["steamid", "name"]).unique()
     player_name_map = {row["steamid"]: row["name"] for row in all_players.iter_rows(named=True)}
 
-    for round_info in dem.rounds.iter_rows(named=True):
+    for round_info in corrected_rounds.iter_rows(named=True):
         round_num = round_info['round_num']
         round_start_tick = round_info['start']
         round_end_tick = round_info['end']
