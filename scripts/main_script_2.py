@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 from requests import post, get
 
 start = time.time()
-#folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
-folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
+#folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
 df_flashes = pd.DataFrame()
@@ -38,7 +38,7 @@ players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "public"
-event_id = 1
+event_id = 2
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
@@ -500,20 +500,26 @@ for file_name in os.listdir(folder_path):
         this_file_df_ticks = dem.ticks
         this_file_df_rounds = dem.rounds
 
-        # Correction needed for the bom_site column due to bug in awpy library
+        # Correction needed for the bomb_site column due to bug in awpy library
         this_file_bomb_planted = dem.events.get('bomb_planted', pl.DataFrame())
-        this_file_bomb_planted = this_file_bomb_planted.with_columns(pl.col("tick").cast(pl.Int64))
-        this_file_df_rounds = this_file_df_rounds.join(
-            this_file_bomb_planted.select(['tick', 'user_place']),
-            left_on='bomb_plant',
-            right_on='tick',
-            how='left'
-        ).with_columns(
-            pl.col('user_place').alias('bomb_site')
-        )
-        this_file_df_rounds = this_file_df_rounds.drop('user_place')
+        if "tick" in this_file_bomb_planted.columns and "user_place" in this_file_bomb_planted.columns:
+            this_file_bomb_planted = this_file_bomb_planted.with_columns(pl.col("tick").cast(pl.Int64))
+            this_file_df_rounds = this_file_df_rounds.join(
+                this_file_bomb_planted.select(['tick', 'user_place']),
+                left_on='bomb_plant',
+                right_on='tick',
+                how='left'
+            ).with_columns(
+                pl.col('user_place').alias('bomb_site')
+            )
+            this_file_df_rounds = this_file_df_rounds.drop('user_place')
+        else:
+            # If no bomb plant events, just add a bomb_site column with None
+            this_file_df_rounds = this_file_df_rounds.with_columns(
+                pl.lit(None).alias('bomb_site')
+            )
         # End of correction
-        
+
         this_file_df_rounds = rounds_correction(this_file_df_rounds)
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
         this_file_df_rounds = add_losing_streaks(this_file_df_rounds)
