@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 from requests import post, get
 
 start = time.time()
-folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
-#folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
+#folder_path = r'C:\Users\bayli\Documents\CS Demos\IEM_Katowice_2025'
+folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Creating DataFrames
 df_flashes = pd.DataFrame()
@@ -499,6 +499,21 @@ for file_name in os.listdir(folder_path):
         # Rounds Data
         this_file_df_ticks = dem.ticks
         this_file_df_rounds = dem.rounds
+
+        # Correction needed for the bom_site column due to bug in awpy library
+        this_file_bomb_planted = dem.events.get('bomb_planted', pl.DataFrame())
+        this_file_bomb_planted = this_file_bomb_planted.with_columns(pl.col("tick").cast(pl.Int64))
+        this_file_df_rounds = this_file_df_rounds.join(
+            this_file_bomb_planted.select(['tick', 'user_place']),
+            left_on='bomb_plant',
+            right_on='tick',
+            how='left'
+        ).with_columns(
+            pl.col('user_place').alias('bomb_site')
+        )
+        this_file_df_rounds = this_file_df_rounds.drop('user_place')
+        # End of correction
+        
         this_file_df_rounds = rounds_correction(this_file_df_rounds)
         this_file_df_rounds = add_round_winners(this_file_df_ticks,this_file_df_rounds)
         this_file_df_rounds = add_losing_streaks(this_file_df_rounds)
@@ -554,6 +569,7 @@ for file_name in os.listdir(folder_path):
         df_clutches = pd.concat([df_clutches,this_file_clutches], ignore_index=True)
         df_clutches = df_clutches.drop(['clutcher_name', 'clutch_start_tick', 'clutch_end_tick'], axis=1)
         df_clutches['file_id'] = event_id
+        df_clutches['event_id'] = event_id
 
         # Creates Multikills Dataframe
         this_file_multikills = calculate_multikill_rounds(dem)
@@ -890,4 +906,7 @@ df_clutches.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\clutch
 # player_match_summary.to_csv(f'player_match_summary_{folder_name}.csv')
 
 end = time.time()
-print(f"Processed {i} files in {end - start:.2f} seconds.")
+elapsed = int(end - start)
+hours, remainder = divmod(elapsed, 3600)
+minutes, seconds = divmod(remainder, 60)
+print(f"Processed {i} files in {hours:02d}h{minutes:02d}m{seconds:02d}s")
