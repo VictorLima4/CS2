@@ -5,6 +5,7 @@ import polars as pl
 import os
 import time
 import awpy
+import re
 from demoparser2 import DemoParser
 from awpy import Demo
 from pathlib import Path
@@ -17,8 +18,11 @@ from dotenv import load_dotenv
 from requests import post, get
 
 start = time.time()
-folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
+#folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
+
+# Notebook Path
+folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
 
 # Creating DataFrames
 df_flashes = pd.DataFrame()
@@ -37,8 +41,8 @@ team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-current_schema = "public"
-event_id = 2
+current_schema = "staging"
+event_id = 3
 
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
@@ -418,6 +422,16 @@ def calculate_multikill_rounds(dem) -> pl.DataFrame:
 
     return multikill_counts
 
+def extract_game_map(fname):
+    fname = re.sub(r'\.dem$', '', fname, flags=re.IGNORECASE)
+    parts = fname.split('-')
+    for i, p in enumerate(parts):
+        if re.fullmatch(r'(?i)m\d+', p):      # encontra "m1", "M2", ...
+            jogo = p
+            mapa = parts[i+1] if i+1 < len(parts) else None
+            return jogo, mapa
+    return None, None
+
 for file_name in os.listdir(folder_path):
     if file_name.endswith('.dem'):
 
@@ -495,6 +509,8 @@ for file_name in os.listdir(folder_path):
         folder_name = os.path.basename(os.path.dirname(file_path))
         file_name = file_name.replace(f"{folder_name}_", "")
         df_matches = pd.concat([df_matches, pd.DataFrame({'match_name': [file_name], 'event_id': [event_id]})], ignore_index=True)
+        # Getting 'map_name' and 'game_number' from the file name
+        df_matches[['game_number','map_name']] = df_matches['match_name'].apply(lambda x: pd.Series(extract_game_map(x)))
 
         # Rounds Data
         this_file_df_ticks = dem.ticks
@@ -590,9 +606,13 @@ for file_name in os.listdir(folder_path):
 
 player_kills = df_kills.groupby('attacker_steamid').agg(
     kills=('attacker_steamid', 'size'),
+    ct_kills=('attacker_side', lambda x: (x == 'ct').sum()),
+    t_kills=('attacker_side', lambda x: (x == 't').sum()),
     headshots=('headshot', lambda x: (x == 1).sum()),
     wallbang_kills=('penetrated', lambda x: (x == 1).sum()),
     assisted_flashes=('assistedflash', lambda x: (x == 1).sum()),
+    ct_assisted_flashes=('assistedflash', lambda x: ((x == 1) & (df_kills.loc[x.index, 'attacker_side'] == 'ct')).sum()),
+    t_assisted_flashes=('assistedflash', lambda x: ((x == 1) & (df_kills.loc[x.index, 'attacker_side'] == 't')).sum()),
     trade_kills=('was_traded', lambda x: (x == 1).sum()),
     no_scope=('noscope', lambda x: (x == 1).sum()),
     through_smoke=('thrusmoke', lambda x: (x == 1).sum()),
@@ -875,7 +895,8 @@ kill_stats_cols = [
     'steam_id', 'kills', 'headshots', 'wallbang_kills', 'no_scope',
     'through_smoke', 'airborne_kills', 'blind_kills', 'victim_blind_kills',
     'awp_kills', 'pistol_kills', 'first_kills', 'ct_first_kills', 't_first_kills',
-    'first_deaths', 'ct_first_deaths', 't_first_deaths', '2k', '3k', '4k', '5k'
+    'first_deaths', 'ct_first_deaths', 't_first_deaths', 'ct_kills', 't_kills', 'ct_assisted_flashes',
+    't_assisted_flashes', '2k', '3k', '4k', '5k'
 ]
 kill_stats_df = players[kill_stats_cols].copy()
 kill_stats_df.loc[:, 'event_id'] = event_id
@@ -904,9 +925,9 @@ insert_table(utility_stats_df, current_schema, "utility_stats", conflict_cols=["
 insert_table(player_match_summary, current_schema, "player_match_summary", conflict_cols=["file_id, steam_id, event_id"])
 
 # # Data export
-players.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\data_export_{folder_name}.csv')
-df_rounds.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\rounds_{folder_name}.csv')
-df_clutches.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\clutches_{folder_name}.csv')
+# players.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\data_export_{folder_name}.csv')
+# df_rounds.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\rounds_{folder_name}.csv')
+# df_clutches.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\clutches_{folder_name}.csv')
 # df_matches.to_csv(f'matches_{folder_name}.csv')
 # teams.to_csv(f'teams_{folder_name}.csv')
 # player_match_summary.to_csv(f'player_match_summary_{folder_name}.csv')
