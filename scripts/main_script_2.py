@@ -45,6 +45,8 @@ i = 1
 current_schema = "public"
 event_id = 2
 
+# Functions
+
 def add_round_winners(ticks_df, rounds_df):
     ticks_df = ticks_df.to_pandas()
     rounds_df = rounds_df.to_pandas()
@@ -660,6 +662,8 @@ for file_name in os.listdir(folder_path):
         print(f"{i}: Processed {file_name}")
         i = i + 1
 
+# Data cleaning and modeling
+
 player_kills = df_kills.groupby('attacker_steamid').agg(
     kills=('attacker_steamid', 'size'),
     ct_kills=('attacker_side', lambda x: (x == 'ct').sum()),
@@ -852,6 +856,8 @@ players = players[["steam_id", "user_name"] + [col for col in players.columns if
 
 # Creates the teams table
 teams = pd.DataFrame({'team_clan_name': pd.concat([df_rounds['ct_team_clan_name'], df_rounds['t_team_clan_name']]).dropna().unique()})
+
+# Database Management and Insertion
 
 # Load environment variables from .env file
 load_dotenv()
