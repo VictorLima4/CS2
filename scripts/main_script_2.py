@@ -19,7 +19,7 @@ from requests import post, get
 from datetime import datetime
 
 start = time.time()
-folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\BAST_Rivals_2025_Season_1'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Notebook Path
@@ -43,7 +43,7 @@ players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "public"
-event_id = 2
+event_id = 4
 
 # Functions
 
