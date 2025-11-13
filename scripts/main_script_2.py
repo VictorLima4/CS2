@@ -19,7 +19,7 @@ from requests import post, get
 from datetime import datetime
 
 start = time.time()
-folder_path = r'C:\Users\bayli\Documents\CS Demos\BAST_Rivals_2025_Season_1'
+folder_path = r'D:\CS_Demos\ESL_Pro_League_Season_20'
 #folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
 # Notebook Path
@@ -43,7 +43,7 @@ players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "public"
-event_id = 4
+event_id = 10
 
 # Functions
 
@@ -473,13 +473,53 @@ def get_file_modified_date(file_path: str) -> str:
     timestamp = os.path.getmtime(file_path)
     return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
 
+
+def is_valid_dem(file_path: str, min_size: int = 1024) -> bool:
+    """Quick sanity checks for a .dem file to avoid passing clearly truncated/corrupt files to the parser.
+
+    Checks performed:
+    - file size is above a small threshold (default 1KB)
+    - the file header contains the expected magic bytes ('HL2DEMO') used by Source engine demo files
+
+    This is a lightweight heuristic (not a full validation). If it returns False the script will skip the file
+    instead of letting the parser raise OutOfBytesError.
+    """
+    try:
+        if not os.path.isfile(file_path):
+            return False
+        size = os.path.getsize(file_path)
+        if size < min_size:
+            return False
+        with open(file_path, 'rb') as fh:
+            header = fh.read(16)
+        # Most Source engine demos start with the ASCII 'HL2DEMO' magic string
+        if b'HL2DEMO' in header:
+            return True
+        # Some variants may have slightly different header layouts; fall back to size-only check
+        return size >= min_size
+    except Exception:
+        return False
+
 # Main Loop
 for file_name in os.listdir(folder_path):
     if file_name.endswith('.dem'):
 
         file_path = os.path.join(folder_path, file_name)
-        dem = Demo(file_path)
-        dem.parse(player_props=["team_clan_name","total_rounds_played", "current_equip_value", "ct_losing_streak", "t_losing_streak", "is_alive"])
+
+        # Quick validation to avoid passing truncated/corrupt demos to awpy's parser which raises
+        # OutOfBytesError when the demo is incomplete. If validation fails we skip and continue.
+        if not is_valid_dem(file_path):
+            print(f"[!] Skipping {file_name}: file seems too small or missing expected header (possible corruption)")
+            continue
+
+        # Wrap parser instantiation and parse in try/except so a single bad demo doesn't crash the whole run
+        try:
+            dem = Demo(file_path)
+            dem.parse(player_props=["team_clan_name","total_rounds_played", "current_equip_value", "ct_losing_streak", "t_losing_streak", "is_alive"])
+        except Exception as e:
+            # Catch broad Exception here because the parser surfaces OutOfBytesError and related parser errors
+            print(f"[!] Error parsing {file_name}: {e}")
+            continue
         folder_name = os.path.basename(os.path.dirname(file_path))
 
         # Gets all the Players' steam_ids
@@ -489,7 +529,8 @@ for file_name in os.listdir(folder_path):
         )
         this_file_players_id = this_file_players_id.to_pandas()
         this_file_players_id = this_file_players_id[['user_steamid', 'user_name']].drop_duplicates()
-        players_id = pd.concat([players_id, this_file_players_id], ignore_index=True)
+        if not this_file_players_id.empty:
+            players_id = pd.concat([players_id, this_file_players_id], ignore_index=True)
         players_id = players_id[['user_steamid', 'user_name']].drop_duplicates()
 
         # Grenades Data
@@ -547,7 +588,8 @@ for file_name in os.listdir(folder_path):
         this_file_df_kills = this_file_df_kills.to_pandas()
         first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
         first_kills = first_kills.groupby('round_num').first().reset_index()
-        df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
+        if not first_kills.empty:
+            df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)
 
         # Rounds Data
         this_file_df_ticks = dem.ticks
@@ -579,11 +621,13 @@ for file_name in os.listdir(folder_path):
         this_file_df_rounds[['ct_buy_type', 't_buy_type']] = this_file_df_rounds.apply(add_buy_type, axis=1, result_type='expand')
         first_kills = this_file_df_kills.sort_values(by=['round_num', 'tick'])
         first_kills = first_kills.groupby('round_num').first().reset_index()
-        df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)   
+        if not first_kills.empty:
+            df_all_first_kills = pd.concat([df_all_first_kills, first_kills], ignore_index=True)   
 
         this_file_df_rounds = calculate_advantage_5v4(this_file_df_rounds, df_all_first_kills)
         this_file_df_rounds['match_name'] = file_name.replace(f"{folder_name}_", "")
-        df_rounds = pd.concat([df_rounds, this_file_df_rounds], ignore_index=True)
+        if not this_file_df_rounds.empty:
+            df_rounds = pd.concat([df_rounds, this_file_df_rounds], ignore_index=True)
         df_rounds['event_id'] = event_id
 
         # Creates rounds won columns
@@ -593,8 +637,10 @@ for file_name in os.listdir(folder_path):
             ct_rounds_won=('winner', lambda x: (x == 't').sum())
         ).reset_index()
         this_file_team_rounds_won.columns = ['team_clan_name', 'total_rounds_won','t_rounds_won', 'ct_rounds_won']
-        team_rounds_won = pd.concat([team_rounds_won,this_file_team_rounds_won], ignore_index=True)
-        df_kills = pd.concat([df_kills,this_file_df_kills], ignore_index=True)
+        if not this_file_team_rounds_won.empty:
+            team_rounds_won = pd.concat([team_rounds_won,this_file_team_rounds_won], ignore_index=True)
+        if not this_file_df_kills.empty:
+            df_kills = pd.concat([df_kills,this_file_df_kills], ignore_index=True)
 
         # Creates Match Table
         file_name = file_name.replace(f"{folder_name}_", "")
@@ -624,7 +670,8 @@ for file_name in os.listdir(folder_path):
         )
         this_file_adr = this_file_adr.to_pandas()
         this_file_adr = this_file_adr.drop(['adr', 'name'], axis=1)
-        df_adr = pd.concat([df_adr, this_file_adr], ignore_index=True)
+        if not this_file_adr.empty:
+            df_adr = pd.concat([df_adr, this_file_adr], ignore_index=True)
         df_adr = df_adr.groupby(['steamid','side'], as_index=False).sum()
         df_adr = df_adr[df_adr['side'] != 'all']
 
@@ -635,7 +682,8 @@ for file_name in os.listdir(folder_path):
         )
         this_file_kast = this_file_kast.to_pandas()
         this_file_kast = this_file_kast.drop(['kast', 'name'], axis=1)
-        df_kast = pd.concat([df_kast, this_file_kast], ignore_index=True)
+        if not this_file_kast.empty:
+            df_kast = pd.concat([df_kast, this_file_kast], ignore_index=True)
         df_kast = df_kast.groupby(['steamid','side'], as_index=False).sum()
         df_kast = df_kast[df_kast['side'] != 'all']
 
@@ -646,7 +694,8 @@ for file_name in os.listdir(folder_path):
         )
         this_file_clutches = this_file_clutches.to_pandas()
         this_file_clutches['match_name'] = file_name
-        df_clutches = pd.concat([df_clutches,this_file_clutches], ignore_index=True)
+        if not this_file_clutches.empty:
+            df_clutches = pd.concat([df_clutches,this_file_clutches], ignore_index=True)
         df_clutches = df_clutches.drop(['clutcher_name', 'clutch_start_tick', 'clutch_end_tick'], axis=1)
         df_clutches['file_id'] = event_id
         df_clutches['event_id'] = event_id
@@ -657,7 +706,8 @@ for file_name in os.listdir(folder_path):
             this_file_multikills['steam_id'].cast(pl.Utf8)
         )
         this_file_multikills = this_file_multikills.to_pandas()
-        df_multikills = pd.concat([df_multikills, this_file_multikills], ignore_index=True)
+        if not this_file_multikills.empty:
+            df_multikills = pd.concat([df_multikills, this_file_multikills], ignore_index=True)
 
         print(f"{i}: Processed {file_name}")
         i = i + 1

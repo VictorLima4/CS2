@@ -21,5 +21,5 @@ def rename_files(folder):
         print(f"Renamed: {file_name} -> {new_name}")
 
 # Replace with your target folder path
-target_folder = r"C:\Users\bayli\Documents\CS Demos\BAST_Rivals_2025_Season_1"
+target_folder = r"D:\CS_Demos\BLAST_Premier_World_Final_2024"
 rename_files(target_folder)
