@@ -44,7 +44,7 @@ players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "staging"
-event_id = 11
+event_id = 12
 
 # Functions
 
@@ -627,8 +627,23 @@ for file_name in os.listdir(folder_path):
 
         # Correction needed for the bomb_site column due to bug in awpy library
         this_file_bomb_planted = dem.events.get('bomb_planted', pl.DataFrame())
+
+        # Ensure the rounds frame has a `bomb_plant` column and that it's nullable Int64
+        if 'bomb_plant' not in this_file_df_rounds.columns:
+            this_file_df_rounds = this_file_df_rounds.with_columns(
+                pl.lit(None).alias('bomb_plant')
+            )
+        this_file_df_rounds = this_file_df_rounds.with_columns(
+            pl.col('bomb_plant').cast(pl.Int64)
+        )
+
+        # If bomb plant events exist and contain the needed columns, cast tick and join.
         if "tick" in this_file_bomb_planted.columns and "user_place" in this_file_bomb_planted.columns:
-            this_file_bomb_planted = this_file_bomb_planted.with_columns(pl.col("tick").cast(pl.Int64))
+            this_file_bomb_planted = this_file_bomb_planted.with_columns(
+                pl.col("tick").cast(pl.Int64)
+            )
+
+            # Perform left join; rows with null `bomb_plant` will keep `bomb_site` as null
             this_file_df_rounds = this_file_df_rounds.join(
                 this_file_bomb_planted.select(['tick', 'user_place']),
                 left_on='bomb_plant',
@@ -636,8 +651,7 @@ for file_name in os.listdir(folder_path):
                 how='left'
             ).with_columns(
                 pl.col('user_place').alias('bomb_site')
-            )
-            this_file_df_rounds = this_file_df_rounds.drop('user_place')
+            ).drop('user_place')
         else:
             # If no bomb plant events, just add a bomb_site column with None
             this_file_df_rounds = this_file_df_rounds.with_columns(
