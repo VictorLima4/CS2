@@ -1,0 +1,1 @@
+insert_table(kill_stats_df, current_schema, "kill_stats", conflict_cols=["steam_id, event_id"])

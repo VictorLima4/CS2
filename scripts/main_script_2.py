@@ -19,10 +19,11 @@ from requests import post, get
 from datetime import datetime
 
 start = time.time()
-folder_path = r'D:\CS_Demos\ESL_Pro_League_Season_20'
-#folder_path = r'C:\Users\bayli\Documents\Git Projects\test_demos'
 
-# Notebook Path
+# Desktop Path
+folder_path = r'C:\Users\bayli\Documents\CS Demos\debugging'
+
+# # Notebook Path
 # folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
 
 # Creating DataFrames
@@ -42,8 +43,8 @@ team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-current_schema = "public"
-event_id = 10
+current_schema = "staging"
+event_id = 11
 
 # Functions
 
@@ -189,8 +190,16 @@ def calculate_advantage_5v4(rounds_df, first_kills_df):
     return rounds_df
 
 def insert_table(df, current_schema, table_name, conflict_cols):
-    for row in df.to_dict(orient="records"):
-        supabase.schema(current_schema).table(table_name).upsert(row, on_conflict=conflict_cols).execute()
+    for idx, row in enumerate(df.to_dict(orient="records")):
+        try:
+            supabase.schema(current_schema).table(table_name).upsert(row, on_conflict=conflict_cols).execute()
+        except Exception as e:
+            print(f"\n[ERROR] Failed to insert row {idx} into {table_name}")
+            print(f"[ERROR] Exception: {e}")
+            print(f"[ERROR] Row data:")
+            for col, val in row.items():
+                print(f"  {col}: {val!r} ({type(val).__name__})")
+            raise
 
 def insert_or_update_player_history(players_df):
     for _, row in players_df.iterrows():
@@ -439,13 +448,35 @@ def calculate_multikill_rounds(dem) -> pl.DataFrame:
     return multikill_counts
 
 def extract_game_map(fname):
+    # remove extension
     fname = re.sub(r'\.dem$', '', fname, flags=re.IGNORECASE)
+
+    # Strip Windows duplicate suffixes like " (1)" that get appended to filenames
+    # e.g. "match-m1-dust2 (1).dem" -> "match-m1-dust2"
+    fname = re.sub(r"\s*\(\d+\)$", "", fname)
+
     parts = fname.split('-')
+
+    # Common CS map names (lowercase). Extend if you use custom maps.
+    MAP_NAMES = {
+        'ancient', 'anubis', 'overpass', 'mirage', 'dust2', 'nuke', 'train',
+        'vertigo', 'inferno', 'cache', 'cobblestone', 'cobble', 'season', 'de_cbble'
+    }
+
     for i, p in enumerate(parts):
-        if re.fullmatch(r'(?i)m\d+', p):
-            game = p
-            map = parts[i+1] if i+1 < len(parts) else None
-            return game, map
+        token = re.sub(r"\s*\(\d+\)$", "", p).strip()
+        # match only plausible game tokens m1..m13 (avoid matching team names like m80)
+        if re.fullmatch(r'(?i)m(?:[1-9]|1[0-3])', token):
+            game = token
+            # candidate for map is the next token
+            map_part = parts[i+1] if i+1 < len(parts) else None
+            if map_part is not None:
+                map_part_clean = re.sub(r"\s*\(\d+\)$", "", map_part).strip()
+                mp_lower = map_part_clean.lower()
+                # accept if it's a known map or looks like a normal map token
+                if mp_lower in MAP_NAMES or (re.fullmatch(r'[a-z0-9_]+', mp_lower) and len(mp_lower) >= 3 and mp_lower not in ('vs', 'v')):
+                    return game, map_part_clean
+                # otherwise skip this match (it may be a stray token)
     return None, None
 
 def get_match_winner_team_name(df_rounds: pd.DataFrame):
@@ -472,7 +503,6 @@ def get_file_modified_date(file_path: str) -> str:
     """
     timestamp = os.path.getmtime(file_path)
     return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
-
 
 def is_valid_dem(file_path: str, min_size: int = 1024) -> bool:
     """Quick sanity checks for a .dem file to avoid passing clearly truncated/corrupt files to the parser.
@@ -1027,6 +1057,11 @@ kill_stats_cols = [
 ]
 kill_stats_df = players[kill_stats_cols].copy()
 kill_stats_df.loc[:, 'event_id'] = event_id
+# Convert float columns to int
+float_to_int_cols = ['first_kills', 'ct_first_kills', 't_first_kills', 'first_deaths', 'ct_first_deaths', 't_first_deaths']
+for col in float_to_int_cols:
+    if col in kill_stats_df.columns:
+        kill_stats_df[col] = kill_stats_df[col].fillna(0).astype('int64')
 
 general_stats_cols = [
     'steam_id', 'assists', 'deaths', 'trade_kills', 'trade_deaths', 'kd', 'k_d_diff',
@@ -1035,6 +1070,11 @@ general_stats_cols = [
 ]
 general_stats_df = players[general_stats_cols].copy()
 general_stats_df.loc[:, 'event_id'] = event_id
+# Convert int-like columns in general_stats_df
+int_like_cols = ['assists', 'deaths', 'trade_kills', 'trade_deaths', 'total_rounds_won', 't_rounds_won', 'ct_rounds_won']
+for col in int_like_cols:
+    if col in general_stats_df.columns:
+        general_stats_df[col] = general_stats_df[col].fillna(0).astype('int64')
 
 utility_stats_cols = [
     'steam_id', 'assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown',
@@ -1045,6 +1085,14 @@ utility_stats_cols = [
 ]
 utility_stats_df = players[utility_stats_cols].copy()
 utility_stats_df.loc[:, 'event_id'] = event_id
+# Convert int-like columns in utility_stats_df
+util_int_cols = ['assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown', 'flashes_thrown_in_pistol_round',
+                  'he_thrown', 'ct_he_thrown', 't_he_thrown', 'he_thrown_in_pistol_round', 'infernos_thrown', 'ct_infernos_thrown',
+                  't_infernos_thrown', 'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
+                  'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg']
+for col in util_int_cols:
+    if col in utility_stats_df.columns:
+        utility_stats_df[col] = utility_stats_df[col].fillna(0).astype('int64')
 
 insert_table(kill_stats_df, current_schema, "kill_stats", conflict_cols=["steam_id, event_id"])
 insert_table(general_stats_df, current_schema, "general_stats", conflict_cols=["steam_id, event_id"])
