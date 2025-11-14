@@ -949,7 +949,7 @@ df_matches['winner_score'] = pd.to_numeric(df_matches['winner_score'], errors='c
 df_matches['defeated_score'] = pd.to_numeric(df_matches['defeated_score'], errors='coerce').fillna(0).astype(int)
 
 df_matches = df_matches.drop(['winner_team_name', 'defeated_team_name'], axis=1)
-df_matches.to_csv(f'C:\\Users\\bayli\\Documents\\Git Projects\\CS2\\CSV\\data_export_{folder_name}.csv')
+
 insert_table(df_matches, current_schema, "matches", conflict_cols=["match_name, event_id"])
 
 # Gets the file_id created by supabase
