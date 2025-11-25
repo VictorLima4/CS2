@@ -448,35 +448,35 @@ def calculate_multikill_rounds(dem) -> pl.DataFrame:
     return multikill_counts
 
 def extract_game_map(fname):
-    # remove extension
+    # Remove extension
     fname = re.sub(r'\.dem$', '', fname, flags=re.IGNORECASE)
 
     # Strip Windows duplicate suffixes like " (1)" that get appended to filenames
-    # e.g. "match-m1-dust2 (1).dem" -> "match-m1-dust2"
     fname = re.sub(r"\s*\(\d+\)$", "", fname)
 
-    # split tokens and clean trailing duplicate suffixes from each token
+    # Split tokens and clean trailing duplicate suffixes from each token
     parts = [re.sub(r"\s*\(\d+\)$", "", p).strip() for p in fname.split('-')]
 
-    # Common CS map names (lowercase). Extend if you use custom maps.
+    # Common CS map names (lowercase). Extend if you use custom maps
     MAP_NAMES = {
         'ancient', 'anubis', 'overpass', 'mirage', 'dust2', 'nuke', 'train',
         'vertigo', 'inferno', 'cache', 'cobblestone', 'cobble', 'season', 'de_cbble'
     }
 
-    # 1) If a match token like m1..m13 exists, prefer it and the following token as the map
+    # 1) If a match token like m1..m5 exists, prefer it and the following token as the map
     for i, token in enumerate(parts):
-        # match only plausible game tokens m1..m13 (avoid matching team names like m80)
+        # Match only plausible game tokens m1..m5 (avoid matching team names like m80)
         if re.fullmatch(r'(?i)m(?:[1-9]|1[0-3])', token):
             game = token
-            # candidate for map is the next token
+            # Candidate for map is the next token
             map_part = parts[i+1] if i+1 < len(parts) else None
             if map_part:
                 mp_lower = map_part.lower()
-                # accept if it's a known map or looks like a normal map token
+                # Accept if it's a known map or looks like a normal map token
                 if mp_lower in MAP_NAMES or (re.fullmatch(r'[a-z0-9_]+', mp_lower) and len(mp_lower) >= 3 and mp_lower not in ('vs', 'v')):
                     return game, map_part
-            # found a game token but couldn't confidently pick a map -> keep searching
+            # Found a game token but couldn't confidently pick a map -> keep searching
+
     # 2) No explicit game token found — try to find a map token anywhere (prefer the last token)
     # Many filenames are like "teamA-vs-teamB-mapname" where the map is the last token.
     # Scan tokens from the right and pick the first plausible map-looking token that is not a vs separator.
