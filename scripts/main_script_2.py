@@ -21,7 +21,7 @@ from datetime import datetime
 start = time.time()
 
 # Desktop Path
-folder_path = r'D:\CS_Demos\IEM_Dallas_2025'
+folder_path = r'D:\CS_Demos\IEM_Cologne_2025'
 
 # # Notebook Path
 # folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
@@ -43,8 +43,8 @@ team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-current_schema = "staging"
-event_id = 12
+current_schema = "public"
+event_id = 15
 
 # Functions
 
@@ -455,7 +455,8 @@ def extract_game_map(fname):
     # e.g. "match-m1-dust2 (1).dem" -> "match-m1-dust2"
     fname = re.sub(r"\s*\(\d+\)$", "", fname)
 
-    parts = fname.split('-')
+    # split tokens and clean trailing duplicate suffixes from each token
+    parts = [re.sub(r"\s*\(\d+\)$", "", p).strip() for p in fname.split('-')]
 
     # Common CS map names (lowercase). Extend if you use custom maps.
     MAP_NAMES = {
@@ -463,20 +464,31 @@ def extract_game_map(fname):
         'vertigo', 'inferno', 'cache', 'cobblestone', 'cobble', 'season', 'de_cbble'
     }
 
-    for i, p in enumerate(parts):
-        token = re.sub(r"\s*\(\d+\)$", "", p).strip()
+    # 1) If a match token like m1..m13 exists, prefer it and the following token as the map
+    for i, token in enumerate(parts):
         # match only plausible game tokens m1..m13 (avoid matching team names like m80)
         if re.fullmatch(r'(?i)m(?:[1-9]|1[0-3])', token):
             game = token
             # candidate for map is the next token
             map_part = parts[i+1] if i+1 < len(parts) else None
-            if map_part is not None:
-                map_part_clean = re.sub(r"\s*\(\d+\)$", "", map_part).strip()
-                mp_lower = map_part_clean.lower()
+            if map_part:
+                mp_lower = map_part.lower()
                 # accept if it's a known map or looks like a normal map token
                 if mp_lower in MAP_NAMES or (re.fullmatch(r'[a-z0-9_]+', mp_lower) and len(mp_lower) >= 3 and mp_lower not in ('vs', 'v')):
-                    return game, map_part_clean
-                # otherwise skip this match (it may be a stray token)
+                    return game, map_part
+            # found a game token but couldn't confidently pick a map -> keep searching
+    # 2) No explicit game token found — try to find a map token anywhere (prefer the last token)
+    # Many filenames are like "teamA-vs-teamB-mapname" where the map is the last token.
+    # Scan tokens from the right and pick the first plausible map-looking token that is not a vs separator.
+    for token in reversed(parts):
+        if not token:
+            continue
+        t = token.lower()
+        if t in ('vs', 'v', 'vs.'):
+            continue
+        if t in MAP_NAMES or (re.fullmatch(r'[a-z0-9_]+', t) and len(t) >= 3):
+            return None, token
+
     return None, None
 
 def get_match_winner_team_name(df_rounds: pd.DataFrame):
