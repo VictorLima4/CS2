@@ -21,7 +21,7 @@ from datetime import datetime
 start = time.time()
 
 # Desktop Path
-folder_path = r'D:\CS_Demos\IEM_Cologne_2025'
+folder_path = r'D:\CS_Demos\BLAST_Open_London_2025'
 
 # # Notebook Path
 # folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
@@ -44,7 +44,7 @@ players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "public"
-event_id = 15
+event_id = 18
 
 # Functions
 
@@ -745,14 +745,21 @@ for file_name in os.listdir(folder_path):
 
         # Creates Clutches Dataframe
         this_file_clutches = calculate_clutches(dem)
-        this_file_clutches = this_file_clutches.with_columns(
-            this_file_clutches['clutcher_steamid', 'opponent_steamid'].cast(pl.Utf8)
-        )
+        # Guard against empty DataFrames or missing columns before selecting/casting
+        # Use `pl.col([...])` to cast multiple columns safely
+        required_cols = {"clutcher_steamid", "opponent_steamid"}
+        if (hasattr(this_file_clutches, 'height') and this_file_clutches.height > 0) or required_cols.issubset(set(this_file_clutches.columns)):
+            this_file_clutches = this_file_clutches.with_columns(
+                pl.col(["clutcher_steamid", "opponent_steamid"]).cast(pl.Utf8)
+            )
         this_file_clutches = this_file_clutches.to_pandas()
         this_file_clutches['match_name'] = file_name
         if not this_file_clutches.empty:
             df_clutches = pd.concat([df_clutches,this_file_clutches], ignore_index=True)
-        df_clutches = df_clutches.drop(['clutcher_name', 'clutch_start_tick', 'clutch_end_tick'], axis=1)
+        # Only drop columns that actually exist to avoid KeyError when df_clutches is empty
+        cols_to_drop = [c for c in ['clutcher_name', 'clutch_start_tick', 'clutch_end_tick'] if c in df_clutches.columns]
+        if cols_to_drop:
+            df_clutches = df_clutches.drop(cols_to_drop, axis=1)
         df_clutches['file_id'] = event_id
         df_clutches['event_id'] = event_id
 
