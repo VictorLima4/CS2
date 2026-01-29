@@ -17,11 +17,13 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 from requests import post, get
 from datetime import datetime
+# Import team normalizer
+from team_normalizer import normalize_team_name, normalization_log, get_normalization_stats, save_normalization_log, clear_log
 
 start = time.time()
 
 # Desktop Path
-folder_path = r'D:\CS_Demos\BLAST_Open_London_2025'
+folder_path = r'C:\Users\bayli\Documents\CS Demos\PGL_Bucharest_2025'
 
 # # Notebook Path
 # folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
@@ -37,14 +39,16 @@ df_all_first_kills = pd.DataFrame()
 df_adr = pd.DataFrame()
 df_kast = pd.DataFrame()
 df_util_dmg = pd.DataFrame()
-df_clutches = pd.DataFrame()
+df_clutches = pd.DataFrame()    
 df_multikills = pd.DataFrame()
 team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-current_schema = "public"
-event_id = 18
+current_schema = "staging"
+event_id = 2
+
+clear_log()
 
 # Functions
 
@@ -70,12 +74,14 @@ def add_round_winners(ticks_df, rounds_df):
 
         # Takes the name for every team
         try:
-            CT_team = first_tick_df[first_tick_df['side'] == 'ct']['team_clan_name'].iloc[0]
+            CT_team_raw = first_tick_df[first_tick_df['side'] == 'ct']['team_clan_name'].iloc[0]
+            CT_team, _ = normalize_team_name(CT_team_raw)
         except IndexError:
             CT_team = None
         
         try:
-            T_team = first_tick_df[first_tick_df['side'] == 't']['team_clan_name'].iloc[0]
+            T_team_raw = first_tick_df[first_tick_df['side'] == 't']['team_clan_name'].iloc[0]
+            T_team, _ = normalize_team_name(T_team_raw)
         except IndexError:
             T_team = None
 
@@ -542,6 +548,18 @@ def is_valid_dem(file_path: str, min_size: int = 1024) -> bool:
     except Exception:
         return False
 
+def convert_to_nullable_int(df, columns=None):
+    """Convert specified columns to nullable Int64, handling NaN values."""
+    if columns is None:
+        # Auto-detect numeric columns with NaN
+        columns = df.select_dtypes(include=['float64', 'int64']).columns
+    
+    for col in columns:
+        if col in df.columns:
+            df[col] = df[col].fillna(pd.NA).astype('Int64')
+    
+    return df
+
 # Main Loop
 for file_name in os.listdir(folder_path):
     if file_name.endswith('.dem'):
@@ -775,6 +793,11 @@ for file_name in os.listdir(folder_path):
         print(f"{i}: Processed {file_name}")
         i = i + 1
 
+log_file = f'logs/team_normalizations_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+save_normalization_log(log_file)
+
+print(f"\n✓ Processing complete. Normalization log saved to: {log_file}")
+
 # Data cleaning and modeling
 
 player_kills = df_kills.groupby('attacker_steamid').agg(
@@ -814,6 +837,9 @@ players = player_kills.merge(player_assists, on='steam_id', how='left').merge(pl
 players['steam_id'] = player_kills['steam_id'].astype('int64')
 players['kd'] = players['kills'] / players['deaths']
 players['k_d_diff'] = players['kills'] - players['deaths']
+
+# Normalize team_clan_name in players dataframe to match database canonical names
+players['team_clan_name'] = players['team_clan_name'].apply(lambda x: normalize_team_name(x)[0])
 
 # ADR Total
 adr_total = df_adr.groupby('steamid').agg({'dmg': 'sum', 'n_rounds': 'sum'})
@@ -967,17 +993,31 @@ players_id['steam_id'] = players_id['steam_id'].astype('int64')
 players = players.merge(players_id, on='steam_id', how='left')
 players = players[["steam_id", "user_name"] + [col for col in players.columns if col not in ["steam_id", "user_name"]]]
 
+players = convert_to_nullable_int(players, columns=[
+    'kills', 'deaths', 'assists', 'headshots', 'wallbang_kills', 
+    'trade_kills', 'trade_deaths', 'first_kills', 'ct_first_kills', 
+    't_first_kills', 'first_deaths', 'ct_first_deaths', 't_first_deaths',
+    'flashes_thrown', 'he_thrown', 'infernos_thrown', 'smokes_thrown',
+    '2k', '3k', '4k', '5k', 'total_rounds_won', 't_rounds_won', 'ct_rounds_won'
+])
+
+# Convert float columns to nullable Float64
+float_cols = ['adr_total', 'adr_ct_side', 'adr_t_side', 'kast_total', 'kast_ct_side', 'kast_t_side', 'kd', 'k_d_diff']
+for col in float_cols:
+    if col in players.columns:
+        players[col] = players[col].astype('Float64')
+
 # Creates the teams table
 teams = pd.DataFrame({'team_clan_name': pd.concat([df_rounds['ct_team_clan_name'], df_rounds['t_team_clan_name']]).dropna().unique()})
 
 # Database Management and Insertion
-
 # Load environment variables from .env file
 load_dotenv()
 url = os.getenv("url")
 key = os.getenv("key")
 supabase: Client = create_client(url, key)
 
+# DB Management
 players_df = players[['steam_id', 'user_name', 'team_clan_name']].drop_duplicates().reset_index(drop=True)
 
 df_rounds['bomb_plant'] = df_rounds['bomb_plant'].replace({np.nan: None})
@@ -989,8 +1029,11 @@ insert_table(teams, current_schema, "teams", conflict_cols=["team_clan_name"])
 # Gets the team_id created by supabase
 teams = fetch_all_rows(current_schema, "teams")
 team_id_map = {item['team_clan_name']: item['id'] for item in teams}
+# Normalize team names in players_df before mapping to team_id
+players_df["team_clan_name"] = players_df["team_clan_name"].apply(lambda x: normalize_team_name(x)[0])
 # Map team_clan_name to team_id in players_df
 players_df["team_id"] = players_df["team_clan_name"].map(team_id_map)
+players_df["team_id"] = players_df["team_id"].astype('Int64')
 players_df = players_df[["steam_id", "user_name", "team_id"]].drop_duplicates()
 # Insert players_data into the database
 players_table = players_df.drop(columns=["team_id"])
@@ -1000,21 +1043,12 @@ players_history = players_df.drop(columns=["user_name"])
 insert_table(players_history[["steam_id", "team_id"]], current_schema, "player_history", conflict_cols=["steam_id, team_id"])
 
 # Insert matches_data into the database
-df_matches["winner_team_id"] = df_matches["winner_team_name"].map(team_id_map)
-df_matches["defeated_team_id"] = df_matches["defeated_team_name"].map(team_id_map)
-
-df_matches['winner_team_id'] = pd.to_numeric(df_matches['winner_team_id'], errors='coerce').fillna(0).astype(int)
-df_matches['defeated_team_id'] = pd.to_numeric(df_matches['defeated_team_id'], errors='coerce').fillna(0).astype(int)
-df_matches['winner_team_id'] = df_matches['winner_team_id'].replace({0: None})
-df_matches['defeated_team_id'] = df_matches['defeated_team_id'].replace({0: None})
-
-df_matches['winner_score'] = pd.to_numeric(df_matches['winner_score'], errors='coerce').fillna(0).astype(int)
-df_matches['defeated_score'] = pd.to_numeric(df_matches['defeated_score'], errors='coerce').fillna(0).astype(int)
-
+df_matches["winner_team_id"] = df_matches["winner_team_name"].map(team_id_map).fillna(pd.NA).astype('Int64')
+df_matches["defeated_team_id"] = df_matches["defeated_team_name"].map(team_id_map).fillna(pd.NA).astype('Int64')
+df_matches['winner_score'] = df_matches['winner_score'].fillna(pd.NA).astype('Int64')
+df_matches['defeated_score'] = df_matches['defeated_score'].fillna(pd.NA).astype('Int64')
 df_matches = df_matches.drop(['winner_team_name', 'defeated_team_name'], axis=1)
-
 insert_table(df_matches, current_schema, "matches", conflict_cols=["match_name, event_id"])
-
 # Gets the file_id created by supabase
 matches = fetch_all_rows(current_schema, "matches")
 file_id_map = {item['match_name']: item['file_id'] for item in matches}
@@ -1090,11 +1124,12 @@ kill_stats_cols = [
 ]
 kill_stats_df = players[kill_stats_cols].copy()
 kill_stats_df.loc[:, 'event_id'] = event_id
-# Convert float columns to int
-float_to_int_cols = ['first_kills', 'ct_first_kills', 't_first_kills', 'first_deaths', 'ct_first_deaths', 't_first_deaths']
-for col in float_to_int_cols:
-    if col in kill_stats_df.columns:
-        kill_stats_df[col] = kill_stats_df[col].fillna(0).astype('int64')
+# Convert to Int64
+kill_int_cols = ['kills', 'headshots', 'wallbang_kills', 'no_scope', 'through_smoke', 'airborne_kills', 
+                 'blind_kills', 'victim_blind_kills', 'awp_kills', 'pistol_kills', 'first_kills', 'ct_first_kills', 
+                 't_first_kills', 'first_deaths', 'ct_first_deaths', 't_first_deaths', 'ct_kills', 't_kills', 
+                 'ct_assisted_flashes', 't_assisted_flashes', '2k', '3k', '4k', '5k']
+kill_stats_df[kill_int_cols] = kill_stats_df[kill_int_cols].fillna(pd.NA).astype('Int64')
 
 general_stats_cols = [
     'steam_id', 'assists', 'deaths', 'trade_kills', 'trade_deaths', 'kd', 'k_d_diff',
@@ -1103,11 +1138,12 @@ general_stats_cols = [
 ]
 general_stats_df = players[general_stats_cols].copy()
 general_stats_df.loc[:, 'event_id'] = event_id
-# Convert int-like columns in general_stats_df
-int_like_cols = ['assists', 'deaths', 'trade_kills', 'trade_deaths', 'total_rounds_won', 't_rounds_won', 'ct_rounds_won']
-for col in int_like_cols:
-    if col in general_stats_df.columns:
-        general_stats_df[col] = general_stats_df[col].fillna(0).astype('int64')
+# Convert Int64 and Float64 columns
+general_int_cols = ['assists', 'deaths', 'trade_kills', 'trade_deaths', 'total_rounds_won', 't_rounds_won', 'ct_rounds_won']
+general_stats_df[general_int_cols] = general_stats_df[general_int_cols].fillna(pd.NA).astype('Int64')
+general_float_cols = ['kd', 'k_d_diff', 'adr_total', 'adr_ct_side', 'adr_t_side', 'kast_total', 'kast_ct_side', 'kast_t_side']
+for col in general_float_cols:
+    general_stats_df[col] = general_stats_df[col].replace([np.inf, -np.inf], np.nan).astype('Float64')
 
 utility_stats_cols = [
     'steam_id', 'assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown',
@@ -1118,14 +1154,22 @@ utility_stats_cols = [
 ]
 utility_stats_df = players[utility_stats_cols].copy()
 utility_stats_df.loc[:, 'event_id'] = event_id
-# Convert int-like columns in utility_stats_df
-util_int_cols = ['assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown', 'flashes_thrown_in_pistol_round',
-                  'he_thrown', 'ct_he_thrown', 't_he_thrown', 'he_thrown_in_pistol_round', 'infernos_thrown', 'ct_infernos_thrown',
-                  't_infernos_thrown', 'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
-                  'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg']
-for col in util_int_cols:
-    if col in utility_stats_df.columns:
-        utility_stats_df[col] = utility_stats_df[col].fillna(0).astype('int64')
+# Convert Int64 and Float64 columns
+utility_stats_cols = [
+    'steam_id', 'assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown',
+    'flashes_thrown_in_pistol_round', 'he_thrown', 'ct_he_thrown', 't_he_thrown',
+    'he_thrown_in_pistol_round', 'infernos_thrown', 'ct_infernos_thrown', 't_infernos_thrown',
+    'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
+    'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg'
+]
+utility_stats_df = players[utility_stats_cols].copy()
+utility_stats_df.loc[:, 'event_id'] = event_id
+# Convert Int64 and Float64 columns
+utility_int_cols = ['assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', 't_flashes_thrown', 'flashes_thrown_in_pistol_round',
+                    'he_thrown', 'ct_he_thrown', 't_he_thrown', 'he_thrown_in_pistol_round', 'infernos_thrown', 'ct_infernos_thrown',
+                    't_infernos_thrown', 'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
+                    'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg']
+utility_stats_df[utility_int_cols] = utility_stats_df[utility_int_cols].fillna(pd.NA).astype('Int64')
 
 insert_table(kill_stats_df, current_schema, "kill_stats", conflict_cols=["steam_id, event_id"])
 insert_table(general_stats_df, current_schema, "general_stats", conflict_cols=["steam_id, event_id"])

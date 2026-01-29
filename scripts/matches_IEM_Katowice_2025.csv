@@ -1,0 +1,89 @@
+,event_id,match_name,winner_team_name,defeated_team_name,winner_score,defeated_score,match_date,game_number,map_name,winner_team_id,defeated_team_id
+0,1,3dmax-vs-big-m1-ancient.dem,3DMAX,BIG,13.0,11.0,2025-02-02,m1,ancient,1.0,2.0
+1,1,3dmax-vs-big-m2-inferno.dem,3DMAX,BIG,13.0,6.0,2025-02-02,m2,inferno,1.0,2.0
+2,1,eternal-fire-vs-3dmax-m1-inferno.dem,3DMAX,Eternal Fire,13.0,4.0,2025-02-03,m1,inferno,1.0,3.0
+3,1,eternal-fire-vs-3dmax-m2-anubis.dem,Eternal Fire,3DMAX,16.0,13.0,2025-02-03,m2,anubis,3.0,1.0
+4,1,eternal-fire-vs-3dmax-m3-dust2.dem,Eternal Fire,3DMAX,13.0,10.0,2025-02-03,m3,dust2,3.0,1.0
+5,1,eternal-fire-vs-faze-m1-anubis.dem,Eternal Fire,FaZe Clan,13.0,4.0,2025-02-04,m1,anubis,3.0,4.0
+6,1,eternal-fire-vs-faze-m2-nuke.dem,Eternal Fire,FaZe Clan,25.0,22.0,2025-02-04,m2,nuke,3.0,4.0
+7,1,eternal-fire-vs-virtus-pro-m1-anubis.dem,Eternal Fire,Virtus.Pro,13.0,9.0,2025-02-02,m1,anubis,3.0,5.0
+8,1,eternal-fire-vs-virtus-pro-m2-dust2-p1.dem,Eternal Fire,Virtus.Pro,3.0,1.0,2025-02-02,m2,dust2,3.0,5.0
+9,1,eternal-fire-vs-virtus-pro-m2-dust2-p2.dem,Virtus.Pro,Eternal Fire,12.0,7.0,2025-02-02,m2,dust2,5.0,3.0
+10,1,eternal-fire-vs-virtus-pro-m3-train-p3.dem,Virtus.Pro,Eternal Fire,16.0,13.0,2025-02-02,m3,train,5.0,3.0
+11,1,falcons-vs-eternal-fire-m1-inferno.dem,Eternal Fire,Team Falcons,13.0,7.0,2025-02-01,m1,inferno,3.0,6.0
+12,1,falcons-vs-eternal-fire-m2-train.dem,Eternal Fire,Team Falcons,13.0,5.0,2025-02-01,m2,train,3.0,6.0
+13,1,falcons-vs-g2-m1-ancient.dem,G2 Esports,Team Falcons,13.0,9.0,2025-02-02,m1,ancient,7.0,6.0
+14,1,falcons-vs-g2-m2-dust2.dem,Team Falcons,G2 Esports,13.0,7.0,2025-02-02,m2,dust2,6.0,7.0
+15,1,falcons-vs-g2-m3-mirage.dem,G2 Esports,Team Falcons,13.0,11.0,2025-02-02,m3,mirage,7.0,6.0
+16,1,faze-vs-big-m1-ancient-p1.dem,BIG,FaZe Clan,7.0,5.0,2025-02-01,m1,ancient,2.0,4.0
+17,1,faze-vs-big-m1-ancient-p2.dem,FaZe Clan,BIG,8.0,3.0,2025-02-01,m1,ancient,4.0,2.0
+18,1,faze-vs-big-m2-mirage.dem,BIG,FaZe Clan,13.0,9.0,2025-02-01,m2,mirage,2.0,4.0
+19,1,faze-vs-big-m3-nuke.dem,FaZe Clan,BIG,13.0,7.0,2025-02-01,m3,nuke,4.0,2.0
+20,1,furia-vs-astralis-m1-inferno-p1.dem,Astralis,FURIA,2.0,1.0,2025-02-03,m1,inferno,8.0,9.0
+21,1,furia-vs-astralis-m1-inferno-p2.dem,Astralis,FURIA,11.0,9.0,2025-02-03,m1,inferno,8.0,9.0
+22,1,furia-vs-astralis-m2-dust2.dem,FURIA,Astralis,13.0,8.0,2025-02-03,m2,dust2,9.0,8.0
+23,1,furia-vs-astralis-m3-nuke-p1.dem,Astralis,FURIA,3.0,3.0,2025-02-03,m3,nuke,8.0,9.0
+24,1,furia-vs-astralis-m3-nuke-p2.dem,Astralis,FURIA,10.0,8.0,2025-02-03,m3,nuke,8.0,9.0
+25,1,g2-vs-faze-m1-ancient-p1.dem,FaZe Clan,G2 Esports,4.0,4.0,2025-02-03,m1,ancient,4.0,7.0
+26,1,g2-vs-faze-m1-ancient-p2.dem,FaZe Clan,G2 Esports,12.0,9.0,2025-02-03,m1,ancient,4.0,7.0
+27,1,g2-vs-faze-m2-inferno-p1.dem,FaZe Clan,G2 Esports,7.0,4.0,2025-02-03,m2,inferno,4.0,7.0
+28,1,g2-vs-faze-m2-inferno-p2.dem,G2 Esports,FaZe Clan,9.0,3.0,2025-02-03,m2,inferno,7.0,4.0
+29,1,g2-vs-faze-m3-nuke.dem,FaZe Clan,G2 Esports,13.0,8.0,2025-02-03,m3,nuke,4.0,7.0
+30,1,g2-vs-virtus-pro-m1-inferno.dem,Virtus.Pro,G2 Esports,13.0,9.0,2025-02-01,m1,inferno,5.0,7.0
+31,1,g2-vs-virtus-pro-m2-mirage.dem,Virtus.Pro,G2 Esports,16.0,14.0,2025-02-01,m2,mirage,5.0,7.0
+32,1,gamerlegion-vs-astralis-m1-nuke-p1.dem,GamerLegion,Astralis,4.0,4.0,2025-02-04,m1,nuke,10.0,8.0
+33,1,gamerlegion-vs-astralis-m1-nuke-p2.dem,GamerLegion,Astralis,9.0,3.0,2025-02-04,m1,nuke,10.0,8.0
+34,1,gamerlegion-vs-astralis-m2-mirage.dem,GamerLegion,Astralis,13.0,7.0,2025-02-04,m2,mirage,10.0,8.0
+35,1,gamerlegion-vs-spirit-m1-anubis-p1.dem,GamerLegion,Team Spirit,4.0,3.0,2025-02-04,m1,anubis,10.0,11.0
+36,1,gamerlegion-vs-spirit-m1-anubis-p2.dem,GamerLegion,Team Spirit,9.0,8.0,2025-02-04,m1,anubis,10.0,11.0
+37,1,gamerlegion-vs-spirit-m2-ancient-p1.dem,Team Spirit,GamerLegion,6.0,1.0,2025-02-04,m2,ancient,11.0,10.0
+38,1,gamerlegion-vs-spirit-m2-ancient-p2.dem,Team Spirit,GamerLegion,7.0,5.0,2025-02-04,m2,ancient,11.0,10.0
+39,1,gamerlegion-vs-spirit-m3-nuke-p3.dem,Team Spirit,GamerLegion,13.0,4.0,2025-02-04,m3,nuke,11.0,10.0
+40,1,gamerlegion-vs-the-mongolz-m1-nuke.dem,The MongolZ,GamerLegion,13.0,10.0,2025-02-03,m1,nuke,12.0,10.0
+41,1,gamerlegion-vs-the-mongolz-m2-mirage.dem,The MongolZ,GamerLegion,13.0,5.0,2025-02-03,m2,mirage,12.0,10.0
+42,1,liquid-vs-spirit-m1-nuke-p1.dem,Team Liquid,Team Spirit,6.0,2.0,2025-02-04,m1,nuke,13.0,11.0
+43,1,liquid-vs-spirit-m1-nuke-p2.dem,Team Spirit,Team Liquid,11.0,4.0,2025-02-04,m1,nuke,11.0,13.0
+44,1,liquid-vs-spirit-m2-dust2.dem,Team Spirit,Team Liquid,13.0,8.0,2025-02-04,m2,dust2,11.0,13.0
+45,1,mouz-vs-gamerlegion-m1-inferno.dem,GamerLegion,MOUZ,13.0,9.0,2025-02-01,m1,inferno,10.0,14.0
+46,1,mouz-vs-gamerlegion-m2-mirage.dem,GamerLegion,MOUZ,13.0,11.0,2025-02-01,m2,mirage,10.0,14.0
+47,1,mouz-vs-liquid-m1-nuke.dem,Team Liquid,MOUZ,13.0,7.0,2025-02-03,m1,nuke,13.0,14.0
+48,1,mouz-vs-liquid-m2-ancient.dem,Team Liquid,MOUZ,13.0,7.0,2025-02-03,m2,ancient,13.0,14.0
+49,1,natus-vincere-vs-furia-m1-dust2.dem,Natus Vincere,FURIA,13.0,5.0,2025-02-01,m1,dust2,15.0,9.0
+50,1,natus-vincere-vs-furia-m2-mirage.dem,Natus Vincere,FURIA,13.0,3.0,2025-02-01,m2,mirage,15.0,9.0
+51,1,natus-vincere-vs-spirit-m1-mirage(1).dem,Natus Vincere,Team Spirit,13.0,8.0,2025-02-03,m1,mirage,15.0,11.0
+52,1,natus-vincere-vs-spirit-m1-mirage.dem,Team Spirit,Natus Vincere,13.0,8.0,2025-02-08,m1,mirage,11.0,15.0
+53,1,natus-vincere-vs-spirit-m2-dust2-p1.dem,,,,,2025-02-03,m2,dust2,,
+54,1,natus-vincere-vs-spirit-m2-dust2-p2.dem,,,,,2025-02-03,m2,dust2,,
+55,1,natus-vincere-vs-spirit-m2-dust2-p3.dem,Natus Vincere,Team Spirit,10.0,10.0,2025-02-03,m2,dust2,15.0,11.0
+56,1,natus-vincere-vs-spirit-m2-dust2.dem,Team Spirit,Natus Vincere,16.0,14.0,2025-02-08,m2,dust2,11.0,15.0
+57,1,natus-vincere-vs-spirit-m3-nuke.dem,Natus Vincere,Team Spirit,16.0,14.0,2025-02-03,m3,nuke,15.0,11.0
+58,1,spirit-vs-astralis-m1-nuke.dem,Team Spirit,Astralis,13.0,5.0,2025-02-02,m1,nuke,11.0,8.0
+59,1,spirit-vs-astralis-m2-dust2-p1.dem,Team Spirit,Astralis,1.0,1.0,2025-02-02,m2,dust2,11.0,8.0
+60,1,spirit-vs-astralis-m2-dust2-p2.dem,Team Spirit,Astralis,12.0,3.0,2025-02-02,m2,dust2,11.0,8.0
+61,1,the-mongolz-vs-eternal-fire-m1-anubis.dem,The MongolZ,Eternal Fire,13.0,7.0,2025-02-07,m1,anubis,12.0,3.0
+62,1,the-mongolz-vs-eternal-fire-m2-mirage-p1.dem,,,,,2025-02-07,m2,mirage,,
+63,1,the-mongolz-vs-eternal-fire-m2-mirage-p2.dem,Eternal Fire,The MongolZ,17.0,16.0,2025-02-07,m2,mirage,3.0,12.0
+64,1,the-mongolz-vs-eternal-fire-m2-mirage-p3.dem,The MongolZ,Eternal Fire,5.0,1.0,2025-02-07,m2,mirage,12.0,3.0
+65,1,the-mongolz-vs-liquid-m1-nuke-p1.dem,The MongolZ,Team Liquid,5.0,4.0,2025-02-02,m1,nuke,12.0,13.0
+66,1,the-mongolz-vs-liquid-m1-nuke-p2.dem,The MongolZ,Team Liquid,4.0,2.0,2025-02-02,m1,nuke,12.0,13.0
+67,1,the-mongolz-vs-liquid-m1-nuke-p3.dem,Team Liquid,The MongolZ,7.0,1.0,2025-02-02,m1,nuke,13.0,12.0
+68,1,the-mongolz-vs-liquid-m2-mirage.dem,The MongolZ,Team Liquid,13.0,8.0,2025-02-02,m2,mirage,12.0,13.0
+69,1,the-mongolz-vs-liquid-m3-ancient.dem,The MongolZ,Team Liquid,13.0,11.0,2025-02-02,m3,ancient,12.0,13.0
+70,1,the-mongolz-vs-natus-vincere-m1-mirage.dem,Natus Vincere,The MongolZ,13.0,3.0,2025-02-04,m1,mirage,15.0,12.0
+71,1,the-mongolz-vs-natus-vincere-m2-ancient.dem,Natus Vincere,The MongolZ,13.0,9.0,2025-02-04,m2,ancient,15.0,12.0
+72,1,virtus-pro-vs-spirit-m1-train.dem,Team Spirit,Virtus.Pro,13.0,2.0,2025-02-07,m1,train,11.0,5.0
+73,1,virtus-pro-vs-spirit-m2-ancient.dem,Team Spirit,Virtus.Pro,13.0,9.0,2025-02-07,m2,ancient,11.0,5.0
+74,1,virtus-pro-vs-vitality-m1-anubis.dem,Team Vitality,Virtus.Pro,13.0,8.0,2025-02-04,m1,anubis,16.0,5.0
+75,1,virtus-pro-vs-vitality-m2-inferno.dem,Team Vitality,Virtus.Pro,13.0,5.0,2025-02-04,m2,inferno,16.0,5.0
+76,1,vitality-vs-3dmax-m1-inferno.dem,Team Vitality,3DMAX,19.0,16.0,2025-02-01,m1,inferno,16.0,1.0
+77,1,vitality-vs-3dmax-m2-nuke-p1.dem,3DMAX,Team Vitality,5.0,4.0,2025-02-01,m2,nuke,1.0,16.0
+78,1,vitality-vs-3dmax-m2-nuke-p2.dem,3DMAX,Team Vitality,2.0,1.0,2025-02-01,m2,nuke,1.0,16.0
+79,1,vitality-vs-3dmax-m2-nuke-p3.dem,Team Vitality,3DMAX,8.0,2.0,2025-02-01,m2,nuke,16.0,1.0
+80,1,vitality-vs-faze-m1-nuke.dem,Team Vitality,FaZe Clan,13.0,3.0,2025-02-02,m1,nuke,16.0,4.0
+81,1,vitality-vs-faze-m2-anubis.dem,FaZe Clan,Team Vitality,13.0,10.0,2025-02-02,m2,anubis,4.0,16.0
+82,1,vitality-vs-faze-m3-dust2.dem,Team Vitality,FaZe Clan,19.0,16.0,2025-02-02,m3,dust2,16.0,4.0
+83,1,vitality-vs-spirit-m1-dust2.dem,Team Vitality,Team Spirit,13.0,6.0,2025-02-09,m1,dust2,16.0,11.0
+84,1,vitality-vs-spirit-m2-nuke.dem,Team Vitality,Team Spirit,13.0,5.0,2025-02-09,m2,nuke,16.0,11.0
+85,1,vitality-vs-spirit-m3-mirage.dem,Team Vitality,Team Spirit,13.0,11.0,2025-02-09,m3,mirage,16.0,11.0
+86,1,vitality-vs-the-mongolz-m1-mirage.dem,Team Vitality,The MongolZ,13.0,7.0,2025-02-08,m1,mirage,16.0,12.0
+87,1,vitality-vs-the-mongolz-m2-nuke.dem,Team Vitality,The MongolZ,13.0,9.0,2025-02-08,m2,nuke,16.0,12.0
