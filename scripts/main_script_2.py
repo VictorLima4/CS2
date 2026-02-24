@@ -19,7 +19,7 @@ from requests import post, get
 from datetime import datetime
 
 # Custom Imports
-from team_normalizer import normalize_team_name, normalization_log, get_normalization_stats, save_normalization_log, clear_log
+from team_normalizer import normalize_team_name, normalization_log, get_normalization_stats, save_normalization_log, clear_log, sync_teams_with_variations
 from cs_demo_functions import (
     add_round_winners, add_losing_streaks, add_buy_type,
     calculate_advantage_5v4, insert_table, insert_or_update_player_history,
@@ -31,7 +31,7 @@ from cs_demo_functions import (
 start = time.time()
 
 # Desktop Path
-folder_path = r'C:\Users\bayli\Documents\CS Demos\debugging'
+folder_path = r'D:\CS_Demos\IEM_Krakow_2026'
 
 # # Notebook Path
 # folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
@@ -53,10 +53,20 @@ team_rounds_won = pd.DataFrame()
 players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
-current_schema = "staging"
-event_id = 2
+current_schema = "prod"
+event_id = 33    
 
 clear_log()
+
+# Load environment variables from .env file
+load_dotenv()
+url = os.getenv("url")
+key = os.getenv("key")
+supabase: Client = create_client(url, key)
+
+print("Syncing teams with database...")
+sync_result = sync_teams_with_variations(supabase, add_variations=True)
+print(f"Added {sync_result['count_added']} new teams")
 
 # Main Loop
 for file_name in os.listdir(folder_path):
@@ -293,7 +303,6 @@ for file_name in os.listdir(folder_path):
 
 log_file = f'logs/team_normalizations_{folder_name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
 save_normalization_log(log_file)
-
 print(f"\n✓ Processing complete. Normalization log saved to: {log_file}")
 
 # Data cleaning and modeling
@@ -505,23 +514,20 @@ for col in float_cols:
     if col in players.columns:
         players[col] = players[col].astype('Float64')
 
-# Creates the teams table
+# # Creates the teams table
 teams = pd.DataFrame({'team_clan_name': pd.concat([df_rounds['ct_team_clan_name'], df_rounds['t_team_clan_name']]).dropna().unique()})
+teams = teams.reset_index(drop=True)
+# Insert only the teams that aren't duplicates - use the new database sync
+sync_teams_with_variations(supabase, schema_name=current_schema, add_variations=True)
 
 # Database Management and Insertion
-# Load environment variables from .env file
-load_dotenv()
-url = os.getenv("url")
-key = os.getenv("key")
-supabase: Client = create_client(url, key)
-
 # DB Management
 players_df = players[['steam_id', 'user_name', 'team_clan_name']].drop_duplicates().reset_index(drop=True)
 
 df_rounds['bomb_plant'] = df_rounds['bomb_plant'].replace({np.nan: None})
 df_rounds['bomb_site'] = df_rounds['bomb_site'].replace({np.nan: None})
 
-# Insert teams_data into the database
+# # Insert teams_data into the database
 teams_data = [{"team_clan_name": name} for name in teams]
 insert_table(teams, supabase, current_schema, "teams", conflict_cols=["team_clan_name"])
 # Gets the team_id created by supabase
@@ -668,6 +674,10 @@ utility_int_cols = ['assisted_flashes', 'flashes_thrown', 'ct_flashes_thrown', '
                     't_infernos_thrown', 'infernos_thrown_in_pistol_round', 'smokes_thrown', 'ct_smokes_thrown', 't_smokes_thrown',
                     'smokes_thrown_in_pistol_round', 'util_in_pistol_round', 'total_util_thrown', 'total_util_dmg', 'ct_total_util_dmg', 't_total_util_dmg']
 utility_stats_df[utility_int_cols] = utility_stats_df[utility_int_cols].fillna(pd.NA).astype('Int64')
+
+# Convert integer columns in player_match_summary to Int64 to avoid float type issues
+player_match_summary_int_cols = ['file_id', 'steam_id', 'team_id', 'event_id']
+player_match_summary[player_match_summary_int_cols] = player_match_summary[player_match_summary_int_cols].fillna(pd.NA).astype('Int64')
 
 insert_table(kill_stats_df, supabase, current_schema, "kill_stats", conflict_cols=["steam_id, event_id"])
 insert_table(general_stats_df, supabase, current_schema, "general_stats", conflict_cols=["steam_id, event_id"])

@@ -21,96 +21,99 @@ TEAM_MAPPING = {
     # 3DMAX
     "TEAM 3DMAX": "3DMAX",
     
+    # 9INE
+    # No variations known
+    
+    # 9z Globant
+    "9z": "9z Globant",
+    
+    # Alliance
+    # No variations known
+    
+    # ATOX
+    # No variations known
+    
     # Astralis
-    # No variations known
-    
-    # FURIA
-    # No variations known
-    
-    # FlyQuest
-    "FLYQUEST": "FlyQuest",
-    
-    # GamerLegion
-    # No variations known
-    
-    # Team Spirit
-    "Spirit": "Team Spirit",
-    
-    # The MongolZ
-    "The Mongolz": "The MongolZ",
-    
-    # Team Liquid
-    "Liquid": "Team Liquid",
-    
-    # MOUZ
-    # No variations known
-    
-    # Natus Vincere
-    "Natus Vincere NAVI": "Natus Vincere",
-    
-    # Team Vitality
-    "Vitality": "Team Vitality",
-    "Team Vitality CS2": "Team Vitality",
-    
-    # Team Falcons
-    "Falcons": "Team Falcons",
-    
-    # FaZe Clan
-    "FaZe": "FaZe Clan",
-    "FaZe Clan CS2": "FaZe Clan",
-    
-    # G2 Esports
-    "G2": "G2 Esports",
-    "G2 Esports CS2": "G2 Esports",
-    
-    # BIG
-    "BIG CS2": "BIG",
-    
-    # Eternal Fire
-    # No variations known
-    
-    # MIBR
-    "Made in Brazil": "MIBR",
-    
-    # SAW
-    # No variations known
-    
-    # Complexity
-    "ComplexityCS": "Complexity",
-    
-    # paiN Gaming
-    "paiN": "paiN Gaming",
-    
-    # LEGACY
-    "Legacy_": "LEGACY",
-    "Legacy": "LEGACY",
-    
-    # Betclic Apogee
     # No variations known
     
     # Aurora Gaming
     "Aurora": "Aurora Gaming",
     "Aurora Gaming -": "Aurora Gaming",
     
-    # ATOX
+    # B8 Esports
+    "B8": "B8 Esports",
+    "[B8]": "B8 Esports",
+    
+    # BCG
+    "BC Game Esports": "BCG",
+    "BCG Esports": "BCG",
+    
+    # Betclic Apogee
+    # No variations known
+    
+    # BetBoom Team
+    # No variations known
+    
+    # BIG
+    "BIG CS2": "BIG",
+    
+    # Complexity
+    "ComplexityCS": "Complexity",
+    
+    # ECSTATIC
     # No variations known
     
     # ENCE
     "ENCE CS2": "ENCE",
     
-    # ECSTATIC
+    # Eternal Fire
     # No variations known
+    
+    # Fnatic
+    # No variations known
+    
+    # Fluxo
+    # No variations known
+    
+    # FlyQuest
+    "FLYQUEST": "FlyQuest",
+    
+    # FURIA
+    "furia": "FURIA",
+    "FURIA Esports": "FURIA",
+    "FURIA CS2": "FURIA",
+    "Furia": "FURIA",
+    
+    # FUT Esports
+    "FUT": "FUT Esports",
+    
+    # G2 Esports
+    "G2": "G2 Esports",
+    "G2 Esports CS2": "G2 Esports",
+    
+    # GamerLegion
+    # No variations known
+    
+    # Gentle Mates
+     "Gentle mates": "Gentle Mates",
+    
+    # HEROIC
+    # No variations known
+    
+    # HOTU Esports
+    "HOTU": "HOTU Esports",
     
     # Imperial Esports
     "Imperial": "Imperial Esports",
     "Imperial Sportsbet": "Imperial Esports",
     "Gamdom Imperial": "Imperial Esports",
     
-    # Fnatic
+    # Inner Circle
     # No variations known
     
-    # HEROIC
-    # No variations known
+    # LEGACY
+    "Legacy_": "LEGACY",
+    "Legacy": "LEGACY",
     
     # Lynn Vision Gaming
     "Lynn Vision": "Lynn Vision Gaming",
@@ -119,6 +122,18 @@ TEAM_MAPPING = {
     # M80
     "M80 CS2": "M80",
     
+    # MIBR
+    "Made in Brazil": "MIBR",
+    
+    # MOUZ
+    # No variations known
+    
+    # Movistar KOI
+    # No variations known
+    
+    # Natus Vincere
+    "Natus Vincere NAVI": "Natus Vincere",
+    
     # Nemiga
     # No variations known
     
@@ -126,19 +141,24 @@ TEAM_MAPPING = {
     "NRG.GG": "NRG",
     
     # Ninjas in Pyjamas
-    # No variations known
+    "NIP": "Ninjas in Pyjamas",
+    "NIP CS2": "Ninjas in Pyjamas",
     
     # ODDIK
     # No variations known
     
     # OG Esports
     "OG CS2": "OG Esports",
+    "OG": "OG Esports",
     
     # PARIVISION
     # No variations known
     
     # Passion UA
     # No variations known
+    
+    # paiN Gaming
+    "paiN": "paiN Gaming",
     
     # Rare Atom
     "RARE ATOM": "Rare Atom",
@@ -150,10 +170,36 @@ TEAM_MAPPING = {
     # Rooster
     # No variations known
     
+    # SAW
+    # No variations known
+    
     # Sangal 1XBET
     # No variations known
     
-    # Movistar KOI
+    # Team Falcons
+    "Falcons": "Team Falcons",
+    
+    # Team Liquid
+    "Liquid": "Team Liquid",
+    
+    # Team Nemesis
+    # No variations known
+    
+    # Team Spirit
+    "Spirit": "Team Spirit",
+    
+    # Team Vitality
+    "Vitality": "Team Vitality",
+    "Team Vitality CS2": "Team Vitality",
+    
+    # The Huns
+    "HUNS": "The Huns",
+    "THE HUNS": "The Huns",
+    
+    # The MongolZ
+    "The Mongolz": "The MongolZ",
+    
+    # TNL
     # No variations known
     
     # Tyloo
@@ -166,40 +212,9 @@ TEAM_MAPPING = {
     # Wildcard Gaming
     "Wildcard": "Wildcard Gaming",
     
-    # BetBoom Team
-    # No variations known
-    
-    # Clutches (if appears)
-    # No variations known
-    
-    # The Huns
-    "HUNS": "The Huns",
-    "THE HUNS": "The Huns",
-    
-    # BCG
-    # No variations known
-    
-    # FUT Esports
-    "FUT": "FUT Esports",
-    
-    # Fluxo
-    # No variations known
-    
-    # Gentle Mates
-    # "Gentle mates": "Gentle Mates",  # Case variation
-    
-    # HOTU Esports
-    "HOTU": "HOTU Esports",
-    
-    # B8 Esports
-    "B8": "B8 Esports",
-    "[B8]": "B8 Esports",
-    
-    # 9INE
-    # No variations known
-    
-    # 9z Globant
-    # No variations known
+    # FaZe Clan
+    "FaZe": "FaZe Clan",
+    "FaZe Clan CS2": "FaZe Clan",
 }
 
 # ============================================================================
@@ -411,4 +426,228 @@ def add_custom_mapping(raw_name: str, canonical_name: str) -> None:
     """
     TEAM_MAPPING[raw_name] = canonical_name
     print(f"Added mapping: '{raw_name}' → '{canonical_name}'")
+
+
+# ============================================================================
+# DATABASE SYNCHRONIZATION
+# ============================================================================
+
+def sync_teams_from_database(supabase, schema_name: str = "public") -> Dict[str, int]:
+    """
+    Fetch all teams from the Supabase database and add any new teams 
+    not currently in TEAM_MAPPING. This ensures the mapping stays synchronized 
+    with the database.
     
+    Process:
+    1. Fetch all teams from the teams table
+    2. Identify teams not in TEAM_MAPPING (either as key or value)
+    3. Add new teams with themselves as both key and value
+    4. Return summary of added teams
+    
+    Args:
+        supabase: Supabase client instance
+        schema_name: Database schema name (default: "public")
+        
+    Returns:
+        Dictionary with:
+        - 'total_in_db': Total teams found in database
+        - 'already_mapped': Teams already in TEAM_MAPPING
+        - 'newly_added': List of newly added team names
+        - 'count_added': Number of teams added
+        
+    Example:
+        >>> result = sync_teams_from_database(supabase)
+        >>> print(f"Added {result['count_added']} new teams")
+    """
+    try:
+        # Fetch all teams from database
+        response = supabase.schema(schema_name).table("teams").select("team_clan_name").execute()
+        db_teams = response.data
+        
+        if not db_teams:
+            print("[INFO] No teams found in database")
+            return {
+                'total_in_db': 0,
+                'already_mapped': 0,
+                'newly_added': [],
+                'count_added': 0
+            }
+        
+        # Extract team names
+        db_team_names = set(team['team_clan_name'] for team in db_teams if team.get('team_clan_name'))
+        
+        # Get all currently mapped teams (both keys and values)
+        mapped_team_names = set(TEAM_MAPPING.keys()) | set(TEAM_MAPPING.values())
+        
+        # Find new teams
+        new_teams = db_team_names - mapped_team_names
+        
+        # Add new teams to mapping (canonical name = raw name for new teams)
+        newly_added = []
+        for team_name in sorted(new_teams):
+            TEAM_MAPPING[team_name] = team_name
+            newly_added.append(team_name)
+        
+        # Return summary
+        result = {
+            'total_in_db': len(db_team_names),
+            'already_mapped': len(db_team_names - new_teams),
+            'newly_added': newly_added,
+            'count_added': len(newly_added)
+        }
+        
+        if newly_added:
+            print(f"\n{'='*70}")
+            print(f"TEAM DATABASE SYNCHRONIZATION SUMMARY")
+            print(f"{'='*70}")
+            print(f"Total teams in database: {result['total_in_db']}")
+            print(f"Already mapped: {result['already_mapped']}")
+            print(f"Newly added: {result['count_added']}")
+            print(f"\nNew teams:")
+            for team in newly_added:
+                print(f"  + {team}")
+            print(f"{'='*70}\n")
+        else:
+            print("[INFO] All teams in database are already mapped")
+        
+        return result
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to sync teams from database: {e}")
+        return {
+            'total_in_db': 0,
+            'already_mapped': 0,
+            'newly_added': [],
+            'count_added': 0,
+            'error': str(e)
+        }
+
+
+def get_db_team_names(supabase, schema_name: str = "public") -> List[str]:
+    """
+    Fetch all team names from the database.
+    
+    Args:
+        supabase: Supabase client instance
+        schema_name: Database schema name (default: "public")
+        
+    Returns:
+        List of team names from database, sorted alphabetically
+    """
+    try:
+        response = supabase.schema(schema_name).table("teams").select("team_clan_name").execute()
+        db_teams = response.data
+        
+        team_names = sorted([team['team_clan_name'] for team in db_teams if team.get('team_clan_name')])
+        return team_names
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch teams from database: {e}")
+        return []
+
+
+def generate_naming_variations(team_name: str) -> List[str]:
+    """
+    Generate common naming variations for a team name.
+    
+    Variations include:
+    - Original name
+    - All lowercase
+    - All uppercase
+    - Title case
+    
+    This is useful for creating additional mappings for new teams from the database
+    to improve matching flexibility.
+    
+    Args:
+        team_name: Base team name to generate variations for
+        
+    Returns:
+        List of naming variations, preserving original as first item
+        
+    Example:
+        >>> generate_naming_variations("FURIA")
+        ['FURIA', 'furia', 'FURIA', 'Furia']
+    """
+    if not team_name:
+        return []
+    
+    variations = [
+        team_name,                          # Original
+        team_name.lower(),                  # All lowercase
+        team_name.upper(),                  # All uppercase
+        team_name.title()                   # Title case
+    ]
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_variations = []
+    for v in variations:
+        if v not in seen:
+            seen.add(v)
+            unique_variations.append(v)
+    
+    return unique_variations
+
+
+def sync_teams_with_variations(supabase, schema_name: str = "public", add_variations: bool = True) -> Dict:
+    """
+    Sync teams from database and optionally add naming variations for new teams.
+    
+    This is an enhanced version of sync_teams_from_database that can also generate
+    and add common naming variations (e.g., uppercase, lowercase, title case) for
+    new teams to improve matching flexibility.
+    
+    Args:
+        supabase: Supabase client instance
+        schema_name: Database schema name (default: "public")
+        add_variations: Whether to add naming variations for new teams (default: True)
+        
+    Returns:
+        Dictionary with:
+        - 'total_in_db': Total teams found in database
+        - 'already_mapped': Teams already in TEAM_MAPPING
+        - 'newly_added': List of newly added team names
+        - 'variations_added': Number of variation mappings added
+        - 'count_added': Number of base teams added
+        
+    Example:
+        >>> result = sync_teams_with_variations(supabase, add_variations=True)
+        >>> print(f"Added {result['count_added']} teams with {result['variations_added']} variations")
+    """
+    try:
+        # First, do basic sync
+        result = sync_teams_from_database(supabase, schema_name)
+        
+        if not add_variations or not result.get('newly_added'):
+            return result
+        
+        # Add naming variations for new teams
+        variations_added = 0
+        
+        for team_name in result['newly_added']:
+            variations = generate_naming_variations(team_name)
+            
+            # Add all variations (except the original which is already added)
+            for variation in variations[1:]:  # Skip the first one (original)
+                if variation not in TEAM_MAPPING:
+                    TEAM_MAPPING[variation] = team_name
+                    variations_added += 1
+        
+        result['variations_added'] = variations_added
+        
+        if variations_added > 0:
+            print(f"[INFO] Added {variations_added} naming variation(s)")
+        
+        return result
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to sync teams with variations: {e}")
+        return {
+            'total_in_db': 0,
+            'already_mapped': 0,
+            'newly_added': [],
+            'count_added': 0,
+            'variations_added': 0,
+            'error': str(e)
+        }
