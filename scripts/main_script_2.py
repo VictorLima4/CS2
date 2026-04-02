@@ -31,7 +31,7 @@ from cs_demo_functions import (
 start = time.time()
 
 # Desktop Path
-folder_path = r'D:\CS_Demos\IEM_Krakow_2026'
+folder_path = r'D:\CS_Demos\ESL_Pro_League_Season_23_Finals'
 
 # # Notebook Path
 # folder_path = r'G:\Meu Drive\Documents\CS Demos\test_demos'
@@ -54,7 +54,7 @@ players_id = pd.DataFrame()
 df_matches = pd.DataFrame(columns=['event_id','match_name'])
 i = 1
 current_schema = "prod"
-event_id = 33    
+event_id = 37    
 
 clear_log()
 
